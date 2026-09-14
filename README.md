@@ -6,15 +6,18 @@ An end-to-end NLP and analytical pipeline to investigate whether global geopolit
 ## Repository Structure
 ```
 ├── data/
-│   ├── raw/                  # Original BI XLSX + raw GDELT response attempts
+│   ├── raw/                  # Original BI XLSX + raw GDELT/CNBC attempts
 │   ├── interim/              # Validated JISDOR and cleaned candidate metadata
 │   └── processed/            # Cleaned, aligned final dataset
 ├── src/
 │   ├── scraper_news.py       # GDELT collection CLI wrapper
-│   ├── acquisition/          # GDELT client and resumable collector
+│   ├── acquisition/          # GDELT pipeline + bounded CNBC archive collector
+│   ├── alignment/            # Strict exact-timestamp/JISDOR alignment
+│   ├── pipeline/             # Timestamp-enriched CNBC pilot orchestrator
 │   ├── preprocessing/        # JISDOR and news metadata cleaners
 │   ├── preprocess_USD-Exchange-Rate.py  # Existing JISDOR CLI, preserved
-│   └── data_alignment.py     # Temporal alignment of news and exchange rates
+│   ├── data_alignment.py     # WIB-aware temporal JISDOR alignment
+│   └── run_task1.py          # Seven-day CNBC proof-of-concept orchestrator
 ├── config/                  # API settings, sources and human topic taxonomy
 ├── tests/                   # Offline pytest suite
 ├── requirements.txt
@@ -24,13 +27,15 @@ An end-to-end NLP and analytical pipeline to investigate whether global geopolit
 ## Task 1: Data Acquisition & Strategic Preprocessing
 
 ### Data Sources
-- **News Data**: GDELT DOC 2.0 Article List JSON, initially Reuters in English
+- **News Data**: Existing GDELT DOC 2.0 pipeline plus CNBC historical article site-map discovery
 - **Exchange Rate Data**: Bank Indonesia JISDOR (USD/IDR daily rate, Sep 2021 – Sep 2026)
 
 ### Pipeline Steps
-1. **Acquisition** — Validate the original BI workbook and collect GDELT candidate metadata through a seven-day pilot before any manual five-year run.
-2. **Metadata cleaning** — Normalize URLs, safe title whitespace, and UTC/WIB timestamps; deduplicate while preserving all query categories and provenance.
-3. **Later research stages** — Human-justified relevance filtering, model-specific text preparation, and temporal alignment remain future work. The original `data_alignment.py` placeholder is unchanged. Lowercasing, stopword removal and lemmatization are not applied to the Task 1 source titles.
+1. **Acquisition** — Validate the original BI workbook; keep the GDELT pipeline intact; and acquire CNBC title/URL discoveries from a maximum of seven daily archive pages.
+2. **Metadata cleaning** — Clean each source independently, deduplicate canonical URLs, preserve raw provenance, and quarantine invalid or out-of-scope records.
+3. **Publisher enrichment and filtering** — Cache exact CNBC publisher timestamps/sections and label every article with the unchanged geopolitical taxonomy.
+4. **Temporal alignment** — Convert exact publisher timestamps to WIB and map them to actual JISDOR dates using the configured research cutoff. The original date-only v1 output is retained for comparison.
+5. **Later research stages** — Human relevance review and model-specific text preparation remain future work. Lowercasing, stopword removal and lemmatization are not applied to source titles.
 
 ## Setup
 ```bash
@@ -47,7 +52,23 @@ python -m src.preprocessing.clean_jisdor
 # 2. Collect and clean only the authorized seven-day pilot
 python -m src.acquisition.collect_gdelt --start-date 2021-09-01 --end-date 2021-09-07 --pilot
 
-# 3. Run deterministic offline tests
+# 3. Run the CNBC acquisition, cleaning, and JISDOR alignment proof-of-concept
+python -m src.run_task1 --start-date 2021-09-01 --end-date 2021-09-07
+
+# Reproduce CNBC cleaning/alignment from cached raw evidence with no HTTP
+python -m src.run_task1 --cached --skip-jisdor-clean
+
+# Enrich only the existing seven-day CNBC URL set
+python -m src.acquisition.collect_cnbc --start-date 2021-09-01 --end-date 2021-09-07 --pilot --enrich-existing
+
+# Run the timestamp-enriched pipeline (reuses discovery and metadata caches)
+python -m src.pipeline.run_task1 --source cnbc --start-date 2021-09-01 --end-date 2021-09-07 --pilot --cache-only --skip-jisdor-clean
+
+# Re-run strict alignment or deterministic review sampling independently
+python -m src.alignment.align_news_jisdor
+python -m src.preprocessing.sample_cnbc_review --n 100 --seed 42
+
+# 4. Run deterministic offline tests
 python -m pytest -q
 ```
 
@@ -64,8 +85,9 @@ alignment placeholders, the BI workbook, and raw/processed directories. The
 README had named a `preprocessing.py` file that was absent. The existing rate
 cleaner provided the extraction/parsing/sorting foundation; it now delegates to
 the validated module instead of silently dropping invalid or duplicate rows.
-No original tracked file was deleted, and the alignment placeholder was not
-modified. Existing requirements were retained; only `openpyxl`, `pyyaml`, and
+No original tracked file was deleted. The alignment placeholder is now the
+CNBC/JISDOR temporal-alignment stage, while the working GDELT implementation
+remains independent. Existing requirements were retained; only `openpyxl`, `pyyaml`, and
 `pytest` were added. Task 1 does not need the NLTK corpus download.
 
 ### JISDOR source and validation
@@ -329,9 +351,10 @@ and even uncapped responses do not prove complete historical coverage. Query
 matches remain candidates and may be unrelated. Article bodies are not fetched
 or provided by this pipeline. No body crawler, paywall/anti-bot bypass, relevance
 classifier, sentiment model, FinBERT, embeddings, features, train/test split,
-returns, interpolation, target creation, or news/JISDOR alignment is performed.
-Source selection, taxonomy, relevance validation, timestamp interpretation,
-alignment rules, targets and model design remain human research decisions.
+returns, interpolation, or target creation is performed. The CNBC proof-of-concept
+does perform a declared date-level JISDOR alignment; GDELT outputs are not
+automatically mixed into it. Source selection, taxonomy, relevance validation,
+target construction and model design remain human research decisions.
 
 ### Recorded implementation results (2026-09-09)
 
@@ -368,3 +391,83 @@ checkpoint directory reproduced the exact scoped CSV and counts, without HTTP
 or raw/checkpoint writes. **213 tests passed; 0 failed;
 0 skipped.** The five-year command was not executed. Live API
 availability and the unfinished pilot must be resolved before a full run.
+
+### CNBC discovery proof-of-concept results (v1, 2026-09-14)
+
+The bounded CNBC orchestrator was run only for **2021-09-01 through
+2021-09-07**. It made seven archive requests with zero retries and did not
+invoke GDELT or crawl article bodies. CNBC's site-map payload is internally
+based on `updatedDate`, so raw evidence can contain canonical URL dates outside
+the requested publication interval. Cleaning retains those records in QA but
+excludes them from the scoped dataset.
+
+| CNBC validation metric | Result |
+|---|---:|
+| Archive days completed / failed | 7 / 0 |
+| HTTP requests / retries | 7 / 0 |
+| Raw archive discoveries | 400 |
+| Clean Sep 1–7 canonical-URL articles | 377 |
+| Invalid/undated quarantined records | 1 |
+| Valid records excluded as outside publication range | 22 |
+| Same-day / next-trading-day JISDOR alignments | 350 / 27 |
+| Unaligned clean rows | 0 |
+
+The archive payload has no intraday publication time. `publication_date` is
+therefore parsed from each validated CNBC canonical URL; `published_at_utc` and
+`published_at_wib` remain empty and the alignment basis is recorded as
+`publication_date_only`. No time is fabricated. The collector rejects any
+request longer than seven inclusive days, so the five-year CNBC scrape was not
+run and cannot be launched through this proof-of-concept command. A cached
+no-network rerun reproduced all 377 aligned rows. The current offline suite is
+**232 passed, 0 failed**.
+
+### CNBC timestamp-enriched pilot results (v2, 2026-09-15)
+
+The v2 enrichment reused exactly the 377 scoped v1 URLs and fetched their CNBC
+article pages with a two-second post-response delay, 30-second timeout, three
+bounded retries, and one compact checkpoint JSON per article ID. Raw HTML is
+not retained. All 377 pages returned publisher timestamps through
+`NewsArticle.datePublished`; UTC is retained and WIB is derived with an aware
+timezone conversion. Section extraction succeeded for all rows (372 from
+JSON-LD and five from the publisher section meta tag). Compared in the original
+publisher timestamp offset, 50 sitemap dates and 14 canonical URL dates differ
+from the exact published date; these are QA observations, not automatic errors.
+
+The existing `config/geopolitical_topics.yaml` is unchanged. A deterministic
+boundary-aware filter selected 28 candidates (7.43%) and retained all 349
+non-candidates. Counts by category are armed conflict 4, monetary/geoeconomic
+22, political instability 1, trade conflict 1, and zero for sanctions and
+energy geopolitics. Section priors add a score signal but cannot create a
+candidate without a title or publisher-keyword taxonomy match.
+
+Strict alignment reads only actual dates in `jisdor_clean.csv`. The configured
+15:00 WIB cutoff is explicitly a September 2021 research assumption, not a
+market-hour fact inferred from the data. Of 377 articles, 151 map to the same
+JISDOR date before cutoff, 179 map forward after cutoff, and 47 weekend articles
+map to the next actual observation; none are unresolved. The v2 output also
+attaches unscaled `previous_jisdor`, `change_idr`, and `return_pct`, with no
+interpolation or synthetic dates. The original date-only aligned CSV remains
+unchanged.
+
+Because only 28 articles satisfy the deterministic candidate rule, the manual
+review CSV includes all 28 rather than inventing non-candidates to reach 100.
+Its three human-label fields are blank. Ordering is deterministic with seed 42,
+category round-robin balancing, publication-date/section round-robin strata,
+and a SHA-256 tie-break. The labeling protocol is in
+`docs/cnbc_manual_review_protocol.md`. Ordinary tests remain fully offline.
+The completed suite reports **245 passed, 0 failed, 0 skipped**.
+
+Known limitations remain: CNBC can change historical page markup or access
+behavior; publisher sections can be broad; the keyword filter can produce both
+false positives and false negatives; and manual relevance labels are still
+pending. All pilot pages exposed JSON-LD timestamps during this run, but future
+reproduction may encounter inaccessible or structurally changed pages. The
+15:00 WIB cutoff is a configurable research assumption and needs domain review
+before causal claims are made.
+
+To reproduce the complete bounded pilot (reusing caches when present and
+fetching only missing metadata for the same 377 URLs):
+
+```bash
+python -m src.pipeline.run_task1 --source cnbc --start-date 2021-09-01 --end-date 2021-09-07 --pilot
+```

@@ -1,0 +1,44 @@
+archive:
+  base_url: "https://www.cnbc.com/site-map/articles"
+  timeout_seconds: 60
+  max_retries: 3
+  initial_retry_delay_seconds: 2
+  max_retry_delay_seconds: 30
+  minimum_request_interval_seconds: 1
+  max_results_per_day: 250
+  user_agent: "NLP-Project-CNBC-POC/1.0 (historical research; contact repository owner)"
+
+article_metadata:
+  timeout_seconds: 30
+  max_retries: 3
+  initial_retry_delay_seconds: 2
+  max_retry_delay_seconds: 30
+  request_delay_seconds: 2
+  user_agent: "NLP-Project-CNBC-POC/1.0 (historical research; contact repository owner)"
+
+filtering:
+  # A section is only a prior/score boost. It never creates a candidate without
+  # a taxonomy keyword match in the title or publisher keyword metadata.
+  high_value_sections:
+    - politics
+    - world
+    - economy
+    - economics
+    - central banks
+    - energy
+    - defense
+    - international
+    - business news
+
+alignment:
+  timezone: "Asia/Jakarta"
+  default_cutoff_wib: "15:00"
+  assumption: "Research configuration for the September 2021 pilot; not inferred from article or JISDOR data."
+  # Future date-dependent regimes can be inserted here without changing the
+  # alignment algorithm: {start_date, end_date, cutoff_wib, rationale}.
+  cutoff_regimes: []
+
+validation:
+  start_date: "2021-09-01"
+  end_date: "2021-09-07"
+  max_days: 7

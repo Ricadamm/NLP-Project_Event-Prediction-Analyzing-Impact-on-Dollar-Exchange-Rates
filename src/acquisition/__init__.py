@@ -1,1 +1,1 @@
-"""GDELT candidate discovery and acquisition helpers."""
+"""GDELT and bounded CNBC candidate discovery/acquisition helpers."""

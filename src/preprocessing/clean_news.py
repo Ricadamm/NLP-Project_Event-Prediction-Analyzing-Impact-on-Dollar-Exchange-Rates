@@ -240,7 +240,11 @@ def clean_records(records: Iterable[Mapping[str, Any]]) -> tuple[pd.DataFrame, d
         rows.append(row)
 
     frame = pd.DataFrame(rows, columns=COLUMNS)
-    frame["published_at_utc"] = pd.to_datetime(frame["published_at_utc"], utc=True)
+    # Pin nanosecond resolution even for an empty frame; pandas may otherwise
+    # choose platform/default second resolution and make the output schema vary.
+    frame["published_at_utc"] = pd.to_datetime(
+        frame["published_at_utc"], utc=True
+    ).astype("datetime64[ns, UTC]")
     frame["published_at_wib"] = frame["published_at_utc"].dt.tz_convert("Asia/Jakarta")
     frame = frame.sort_values(["published_at_utc", "normalized_url"], na_position="last").reset_index(drop=True)
     times = frame["published_at_utc"].dropna()
