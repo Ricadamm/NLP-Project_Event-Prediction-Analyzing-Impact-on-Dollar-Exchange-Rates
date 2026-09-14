@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import sys
 
-raw_path = os.path.join("data", "raw", "Informasi Kurs Jisdor.xlsx")
+raw_path = "Informasi Kurs Jisdor.xlsx"
 output_dir = os.path.join("data", "cleaned")
 output_path = os.path.join(output_dir, "usd_idr_jisdor_cleaned.csv")
 
@@ -50,7 +50,7 @@ def clean_types(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def finalize_and_save(df: pd.DataFrame, output_path: str) -> pd.DataFrame:
-   """Put the rows in date order, remove any repeated dates, and save the cleaned results to a file"""
+    """Put the rows in date order, remove any repeated dates, and save the cleaned results to a file"""
     df = df[["date", "usd_idr"]].sort_values("date")
     before = len(df)
     df = df.drop_duplicates(subset=["date"], keep="first")
