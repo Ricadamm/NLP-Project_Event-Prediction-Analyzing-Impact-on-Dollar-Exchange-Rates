@@ -2,17 +2,18 @@
 
 ## Project Overview
 
-This project develops an end-to-end NLP and analytical pipeline to investigate whether global geopolitical events reported in the news influence and help predict fluctuations in the **USD/IDR exchange rate**.
+This project investigates whether global geopolitical news influences and can help predict fluctuations in the **USD/IDR exchange rate**.
 
-The Task 1 pipeline focuses on:
+Task 1 focuses on building a reproducible data pipeline for:
 
-- Historical geopolitical news acquisition
-- News filtering and preprocessing
-- Bank Indonesia JISDOR exchange-rate preprocessing
-- Timezone-aware temporal alignment between news and JISDOR trading dates
-- Generation of article-level and daily datasets for downstream NLP and predictive modeling
+- historical geopolitical news acquisition,
+- CNBC article discovery and metadata enrichment,
+- deterministic geopolitical filtering,
+- Bank Indonesia JISDOR preprocessing,
+- timestamp-aware news-to-trading-day alignment, and
+- generation of daily datasets for downstream NLP and predictive modeling.
 
-The study period covers **1 September 2021 – 1 September 2026**.
+**Study period:** 1 September 2021 – 1 September 2026.
 
 ---
 
@@ -20,18 +21,9 @@ The study period covers **1 September 2021 – 1 September 2026**.
 
 ### News Data
 
-Historical news articles are collected from **CNBC** using CNBC's historical sitemap/archive infrastructure.
+The main historical news source is **CNBC**. The pipeline discovers CNBC articles through historical sitemap/archive records, deduplicates URLs, applies a broad geopolitical prefilter, enriches candidate articles with publisher metadata, and performs deterministic geopolitical filtering.
 
-The acquisition pipeline:
-
-1. Discovers historical CNBC article URLs
-2. Removes duplicate URLs
-3. Applies a broad geopolitical prefilter
-4. Retrieves publisher metadata
-5. Extracts exact publication timestamps when available
-6. Applies deterministic geopolitical-category filtering
-
-The geopolitical categories currently include:
+The current geopolitical categories are:
 
 - Armed Conflict
 - Sanctions
@@ -40,160 +32,177 @@ The geopolitical categories currently include:
 - Political Instability
 - Monetary / Geoeconomic Events
 
-These categories are deterministic retrieval and filtering labels, not manually verified ground-truth annotations.
+These categories are **candidate-retrieval/filtering labels**, not manually verified ground-truth annotations.
+
+A small GDELT sample and the earlier GDELT acquisition implementation are also retained for reproducibility.
 
 ### Exchange Rate Data
 
-USD/IDR exchange-rate data are obtained from **Bank Indonesia JISDOR**.
+USD/IDR exchange-rate data are sourced from **Bank Indonesia JISDOR**.
 
-The dataset contains official JISDOR observations from:
-
-```text
-2021-09-01 → 2026-09-01
-```
-
-Only actual JISDOR observation dates are retained. Weekends and holidays are not artificially interpolated.
+The repository contains JISDOR observations for the study period and retains only actual JISDOR observation dates. Weekend and holiday rows are not artificially interpolated.
 
 ---
 
-## Repository Structure
+## Current Repository Structure
 
 ```text
-├── config/
-│   ├── cnbc.yaml
-│   └── geopolitical_topics.yaml
+.
+├── .gitignore
+├── README.md
+├── requirements.txt
 │
 ├── data/
-│   ├── raw/                         # Original source data
-│   ├── interim/                     # Intermediate cleaned/enriched datasets
-│   └── processed/                   # Final aligned and aggregated datasets
+│   ├── raw/
+│   │   ├── .gitkeep
+│   │   ├── Informasi Kurs Jisdor.xlsx
+│   │   └── sample_GDELTS_Raw_Data.tsv
+│   │
+│   └── processed/
+│       ├── .gitkeep
+│       ├── cnbc_full_collection_report.json
+│       ├── cnbc_jisdor_daily.csv
+│       └── usd_idr_jisdor_cleaned.csv
 │
-├── src/
-│   ├── __init__.py
-│   │
-│   ├── acquisition/
-│   │   ├── __init__.py
-│   │   ├── cnbc_client.py
-│   │   ├── collect_cnbc.py
-│   │   ├── collect_gdelt.py
-│   │   ├── enrich_cnbc.py
-│   │   └── gdelt_client.py
-│   │
-│   ├── preprocessing/
-│   │   ├── __init__.py
-│   │   ├── clean_cnbc.py
-│   │   ├── clean_jisdor.py
-│   │   ├── clean_news.py
-│   │   ├── prefilter_cnbc.py
-│   │   ├── filter_cnbc.py
-│   │   └── sample_cnbc_review.py
-│   │
-│   ├── alignment/
-│   │   ├── __init__.py
-│   │   ├── common.py
-│   │   └── align_news_jisdor.py
-│   │
-│   ├── pipeline/
-│   │   ├── __init__.py
-│   │   └── run_task1.py
-│   │
-│   ├── cli/
-│   │   ├── __init__.py
-│   │   ├── preprocess_jisdor.py
-│   │   ├── run_task1.py
-│   │   └── scraper_news.py
-│   │
-│   └── legacy/
-│       ├── __init__.py
-│       └── preprocess_USDExchangeRate.py
-│
-├── tests/
-├── requirements.txt
-└── README.md
+└── src/
+    ├── __init__.py
+    │
+    ├── acquisition/
+    │   ├── __init__.py
+    │   ├── cnbc_client.py
+    │   ├── collect_cnbc.py
+    │   ├── collect_gdelt.py
+    │   ├── enrich_cnbc.py
+    │   └── gdelt_client.py
+    │
+    ├── alignment/
+    │   ├── __init__.py
+    │   └── align_news_jisdor.py
+    │
+    ├── pipeline/
+    │   ├── __init__.py
+    │   └── run_task1.py
+    │
+    ├── preprocessing/
+    │   ├── __init__.py
+    │   ├── clean_cnbc.py
+    │   ├── clean_jisdor.py
+    │   ├── clean_news.py
+    │   ├── filter_cnbc.py
+    │   ├── prefilter_cnbc.py
+    │   └── sample_cnbc_review.py
+    │
+    ├── data_alignment.py
+    ├── preprocess_USDExchangeRate.py
+    ├── run_task1.py
+    └── scraper_news.py
 ```
+
+### Source-Code Organization
+
+- `src/acquisition/` — CNBC and GDELT acquisition utilities.
+- `src/preprocessing/` — JISDOR cleaning, CNBC cleaning, prefiltering, filtering, and validation sampling.
+- `src/alignment/` — strict CNBC timestamp-to-JISDOR temporal alignment and daily aggregation.
+- `src/pipeline/` — Task 1 pipeline orchestration.
+- `src/data_alignment.py` — shared JISDOR validation utilities plus the earlier alignment implementation currently referenced by the strict aligner.
+- `src/preprocess_USDExchangeRate.py` — original JISDOR preprocessing script retained from the initial project implementation.
+- `src/run_task1.py` — compatibility entry point for `src.pipeline.run_task1`.
+- `src/scraper_news.py` — compatibility entry point for the GDELT collector.
 
 ---
 
 ## Task 1 Pipeline
 
-### 1. Data Acquisition
+### 1. CNBC Historical Discovery
 
-Historical CNBC articles are discovered across the study period and stored with provenance information such as:
+CNBC historical sitemap/archive records are collected across the requested study period.
 
-- Article ID
-- Article URL
-- Headline
-- Publication timestamp
-- Publisher
-- Discovery date
-- Retrieval timestamp
-- Timestamp quality/status
+The full collection report currently records:
 
-### 2. News Prefiltering and Enrichment
+- **1,827** requested calendar days
+- **124,479** raw sitemap records
+- **120,034** unique CNBC URLs
 
-A broad title and URL prefilter reduces the number of articles requiring additional metadata retrieval.
+### 2. Prefiltering and Metadata Enrichment
 
-Selected articles are then enriched with publisher metadata, including exact publication timestamps whenever available.
+A broad title/URL prefilter is applied before article metadata enrichment.
+
+Current full-run results:
+
+- **14,763** prefilter candidates
+- **14,761** exact publisher timestamps
+- **2** missing timestamps
 
 ### 3. Geopolitical Filtering
 
-Articles are filtered using deterministic keyword and topic rules. An article may belong to more than one geopolitical category.
+The deterministic geopolitical filter produced:
 
-The resulting dataset represents **geopolitical candidate articles** rather than manually labeled ground truth.
+- **11,003** final geopolitical candidate articles
+
+Current multi-label category counts:
+
+| Category | Count |
+|---|---:|
+| Monetary / Geoeconomic | 5,110 |
+| Armed Conflict | 3,362 |
+| Trade Conflict | 2,428 |
+| Energy Geopolitics | 525 |
+| Sanctions | 298 |
+| Political Instability | 78 |
+
+Because categories are multi-label, category counts do not sum to the total number of candidate articles.
 
 ### 4. JISDOR Preprocessing
 
-The Bank Indonesia JISDOR dataset is cleaned by:
+The Bank Indonesia workbook is parsed and validated before alignment.
 
-- Identifying the actual data table in the source file
-- Parsing dates
-- Converting JISDOR rates to numeric values
-- Removing invalid rows
-- Checking duplicate dates
-- Sorting observations chronologically
+The processing workflow checks:
 
-No synthetic weekend or holiday observations are created.
+- date parsing,
+- numeric exchange-rate conversion,
+- invalid or missing rows,
+- duplicate dates,
+- chronological ordering, and
+- actual JISDOR observation dates.
+
+The final trading calendar contains **1,202 JISDOR observations**.
 
 ### 5. Temporal Alignment
 
-CNBC publication timestamps are converted to **WIB (`Asia/Jakarta`)** before alignment.
+CNBC publication timestamps are interpreted in **WIB (`Asia/Jakarta`)** and mapped to actual JISDOR observation dates.
 
-The alignment process uses the actual JISDOR trading calendar.
-
-```text
-Article published before cutoff
-        ↓
-Eligible for the same JISDOR trading date
-
-Article published at/after cutoff
-        ↓
-Next available JISDOR trading date
-
-Article published on weekend/holiday
-        ↓
-Next available JISDOR trading date
-```
-
-The current Task 1 methodology uses a **15:00 WIB cutoff** as the configured research assumption.
-
-No exchange-rate observations are interpolated for non-trading days.
-
-### 6. Exchange-Rate Features
-
-The aligned dataset includes JISDOR movement features such as:
+The current research configuration uses a **15:00 WIB cutoff**:
 
 ```text
-previous_jisdor
-jisdor
-change_idr
-return_pct
+Published before 15:00 WIB on a JISDOR day
+        ↓
+Same trading day
+
+Published at/after 15:00 WIB
+        ↓
+Next available JISDOR trading day
+
+Published on weekend / non-JISDOR day
+        ↓
+Next available JISDOR trading day
 ```
 
-`return_pct` represents the percentage movement relative to the previous JISDOR observation.
+Current alignment results:
 
-### 7. Daily Aggregation
+- **10,997** aligned articles
+- **6** unaligned articles
+- **4,501** same-day-before-cutoff articles
+- **4,608** after-cutoff articles mapped to the next trading day
+- **905** weekend articles mapped forward
+- **983** other non-JISDOR-day articles mapped forward
 
-Article-level observations are aggregated into a daily JISDOR dataset containing features such as:
+No weekend or holiday exchange-rate observations are synthesized.
+
+### 6. Daily Aggregation
+
+Aligned article-level records are aggregated to the JISDOR trading-day level.
+
+The daily dataset includes:
 
 ```text
 date
@@ -210,32 +219,60 @@ political_instability_count
 monetary_geoeconomic_count
 ```
 
-This dataset is intended to support the next stages of NLP feature extraction, hypothesis testing, and predictive modeling.
+The current output contains news on **1,185 of 1,202 JISDOR trading days**.
+
+---
+
+## Main Processed Outputs
+
+### Daily CNBC + JISDOR Dataset
+
+```text
+data/processed/cnbc_jisdor_daily.csv
+```
+
+This is the main Task 1 daily dataset intended for later NLP feature engineering, statistical analysis, and predictive modeling.
+
+### CNBC Full Collection Report
+
+```text
+data/processed/cnbc_full_collection_report.json
+```
+
+Contains collection, filtering, enrichment, alignment, category, and reconciliation statistics.
+
+### Original Cleaned JISDOR Dataset
+
+```text
+data/processed/usd_idr_jisdor_cleaned.csv
+```
+
+Contains the cleaned USD/IDR JISDOR observations from the original preprocessing workflow.
 
 ---
 
 ## Setup
 
-### 1. Clone the Repository
+Clone the repository:
 
 ```bash
 git clone https://github.com/Ricadamm/NLP-Project_Event-Prediction-Analyzing-Impact-on-Dollar-Exchange-Rates.git
 cd NLP-Project_Event-Prediction-Analyzing-Impact-on-Dollar-Exchange-Rates
 ```
 
-### 2. Create a Virtual Environment
+Create a virtual environment:
 
 ```bash
 python -m venv .venv
 ```
 
-Windows PowerShell:
+Activate it on Windows PowerShell:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 3. Install Dependencies
+Install dependencies:
 
 ```bash
 python -m pip install -r requirements.txt
@@ -245,100 +282,74 @@ python -m pip install -r requirements.txt
 
 ## Usage
 
-### Run the Complete Task 1 Pipeline
+### Task 1 Pipeline Entry Point
 
 ```bash
-python -m src.cli.run_task1 --help
+python src/run_task1.py --help
 ```
 
-The main pipeline implementation is located at:
+or:
 
-```text
-src/pipeline/run_task1.py
+```bash
+python -m src.pipeline.run_task1 --help
 ```
 
-### Run CNBC / News Acquisition
+### CNBC Acquisition
 
 ```bash
 python -m src.acquisition.collect_cnbc --help
 ```
 
-Legacy GDELT collection remains available for reproducibility:
+### GDELT Collector
 
 ```bash
-python -m src.cli.scraper_news --help
+python src/scraper_news.py --pilot
 ```
 
-### Preprocess JISDOR
+### Validated JISDOR Preprocessing
 
 ```bash
-python -m src.cli.preprocess_jisdor --help
+python -m src.preprocessing.clean_jisdor --help
 ```
 
-The validated JISDOR cleaning implementation is located at:
+The original JISDOR preprocessing implementation is retained as:
 
 ```text
-src/preprocessing/clean_jisdor.py
+src/preprocess_USDExchangeRate.py
 ```
 
-The team's original JISDOR preprocessing implementation is retained under:
-
-```text
-src/legacy/preprocess_USDExchangeRate.py
-```
-
-for project history and reproducibility.
-
-### Align CNBC News with JISDOR
+### CNBC-to-JISDOR Alignment
 
 ```bash
 python -m src.alignment.align_news_jisdor --help
 ```
 
-This module performs the final timestamp-aware CNBC-to-JISDOR alignment.
-
 ---
 
-## Main Processed Output
+## Important Reproducibility Note
 
-The primary daily dataset generated by Task 1 is:
-
-```text
-data/processed/cnbc_jisdor_daily.csv
-```
-
-A pipeline summary and quality-control report is stored in:
+The pipeline source currently references configuration files such as:
 
 ```text
-data/processed/cnbc_full_collection_report.json
+config/cnbc.yaml
+config/geopolitical_topics.yaml
 ```
 
----
+These configuration files are **not currently tracked on the `main` branch**. They must be restored or supplied before rerunning the complete historical CNBC pipeline end-to-end from a fresh clone.
 
-## Testing
-
-Install the test dependency if necessary:
-
-```bash
-python -m pip install pytest
-```
-
-Run the test suite with:
-
-```bash
-python -m pytest -q
-```
+The already-generated Task 1 processed outputs are available under `data/processed/`.
 
 ---
 
 ## Notes
 
-- Exact CNBC publisher timestamps are preferred for temporal alignment.
-- All timestamps used for alignment are interpreted in WIB.
+- Exact CNBC publisher timestamps are preferred for strict alignment.
+- All alignment is performed relative to WIB.
 - Actual JISDOR observation dates define the trading calendar.
-- Weekend and holiday JISDOR values are not interpolated.
-- Geopolitical categories are deterministic candidate-retrieval labels.
-- The 15:00 WIB cutoff is treated as a configured research assumption for Task 1.
+- No weekend/holiday JISDOR values are interpolated.
+- The **15:00 WIB cutoff** is a configured research assumption.
+- Deterministic geopolitical categories are retrieval/filtering labels rather than manual relevance labels.
+- GDELT remains in the repository as an earlier/alternative acquisition approach; the final historical pipeline uses CNBC.
 
 ---
 
