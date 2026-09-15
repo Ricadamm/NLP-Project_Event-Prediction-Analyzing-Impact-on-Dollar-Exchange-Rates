@@ -235,7 +235,14 @@ def clean_records(
     return frame, report
 
 
-def read_raw_records(path: str | Path) -> list[dict]:
+def read_raw_records(
+    path: str | Path,
+    *,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> list[dict]:
+    if (start_date is None) != (end_date is None):
+        raise ValueError("start_date and end_date must be supplied together")
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(path)
@@ -249,6 +256,13 @@ def read_raw_records(path: str | Path) -> list[dict]:
         if not isinstance(envelope, dict):
             raise ValueError(f"Expected JSON object: {file}")
         day = str(envelope.get("archive_date", file))
+        if start_date is not None:
+            try:
+                archive_day = date.fromisoformat(day)
+            except ValueError:
+                continue
+            if not start_date <= archive_day <= end_date:
+                continue
         match = re.search(r"\.attempt-(\d+)\.json$", file.name)
         attempt = int(match.group(1)) if match else 0
         if day not in latest or attempt > latest[day][0]:

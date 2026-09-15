@@ -1,11 +1,13 @@
 archive:
   base_url: "https://www.cnbc.com/site-map/articles"
+  graphql_url: "https://webql-redesign.cnbcfm.com/graphql"
   timeout_seconds: 60
   max_retries: 3
   initial_retry_delay_seconds: 2
   max_retry_delay_seconds: 30
   minimum_request_interval_seconds: 1
-  max_results_per_day: 250
+  max_results_per_page: 250
+  max_pages_per_day: 100
   user_agent: "NLP-Project-CNBC-POC/1.0 (historical research; contact repository owner)"
 
 article_metadata:
@@ -30,10 +32,41 @@ filtering:
     - international
     - business news
 
+prefilter:
+  # Recall-oriented HTTP queue additions for common CNBC headline vocabulary.
+  # These supplement, rather than replace, geopolitical_topics.yaml. Keep this
+  # list small and human-reviewable; the post-enrichment filter remains final.
+  use_url_path: true
+  additional_keywords:
+    armed_conflict:
+      - attack
+      - troops
+      - nuclear
+      - NATO
+    sanctions:
+      - sanctioned
+    trade_conflict:
+      - "trade tensions"
+      - "export control"
+      - "export controls"
+    energy_geopolitics:
+      - "crude oil"
+      - "gas supply"
+      - "gas pipeline"
+      - "OPEC+"
+    political_instability:
+      - protest
+      - protests
+    monetary_geoeconomic:
+      - Fed
+      - "rate cut"
+      - "central bank"
+      - "monetary policy"
+
 alignment:
   timezone: "Asia/Jakarta"
   default_cutoff_wib: "15:00"
-  assumption: "Research configuration for the September 2021 pilot; not inferred from article or JISDOR data."
+  assumption: "15:00 WIB research cutoff for the 2021-09-01 through 2026-09-01 study; not inferred from article or JISDOR data."
   # Future date-dependent regimes can be inserted here without changing the
   # alignment algorithm: {start_date, end_date, cutoff_wib, rationale}.
   cutoff_regimes: []
@@ -42,3 +75,5 @@ validation:
   start_date: "2021-09-01"
   end_date: "2021-09-07"
   max_days: 7
+  study_start_date: "2021-09-01"
+  study_end_date: "2026-09-01"

@@ -23,6 +23,15 @@ DEFAULT_NEWS = ROOT / "data/interim/news/cnbc_news_candidates.csv"
 DEFAULT_JISDOR = ROOT / "data/interim/jisdor/jisdor_clean.csv"
 DEFAULT_OUTPUT = ROOT / "data/processed/cnbc_jisdor_aligned_v2.csv"
 DEFAULT_REPORT = ROOT / "data/processed/cnbc_alignment_report.json"
+DEFAULT_DAILY_OUTPUT = ROOT / "data/processed/cnbc_jisdor_daily.csv"
+CATEGORY_COUNT_COLUMNS = {
+    "armed_conflict": "armed_conflict_count",
+    "sanctions": "sanctions_count",
+    "trade_conflict": "trade_conflict_count",
+    "energy_geopolitics": "energy_geopolitics_count",
+    "political_instability": "political_instability_count",
+    "monetary_geoeconomic": "monetary_geoeconomic_count",
+}
 
 
 def _parse_cutoff(value: str) -> time:
@@ -91,6 +100,77 @@ def jisdor_features(jisdor: pd.DataFrame) -> pd.DataFrame:
     features["change_idr"] = features["jisdor"] - features["previous_jisdor"]
     features["return_pct"] = ((features["jisdor"] / features["previous_jisdor"]) - 1) * 100
     return features
+
+
+def _decoded_categories(value) -> set[str]:
+    if isinstance(value, list):
+        decoded = value
+    elif isinstance(value, str) and value.strip():
+        try:
+            decoded = json.loads(value)
+        except json.JSONDecodeError:
+            decoded = []
+    else:
+        decoded = []
+    return {str(item) for item in decoded} if isinstance(decoded, list) else set()
+
+
+def aggregate_jisdor_daily(
+    aligned_news: pd.DataFrame,
+    jisdor: pd.DataFrame,
+) -> tuple[pd.DataFrame, dict]:
+    """Aggregate selected articles while retaining every actual JISDOR date."""
+    features = jisdor_features(jisdor)
+    daily = features.copy()
+    daily["date"] = daily["date"].map(lambda value: value.isoformat())
+    daily["news_count"] = 0
+    for column in CATEGORY_COUNT_COLUMNS.values():
+        daily[column] = 0
+    by_date = {day: index for index, day in enumerate(daily["date"])}
+    counted_articles = 0
+    for row in aligned_news.to_dict(orient="records"):
+        day = str(row.get("effective_trade_date", ""))
+        if day not in by_date:
+            continue
+        index = by_date[day]
+        daily.at[index, "news_count"] += 1
+        counted_articles += 1
+        for category in _decoded_categories(row.get("matched_categories")):
+            column = CATEGORY_COUNT_COLUMNS.get(category)
+            if column:
+                daily.at[index, column] += 1
+    count_columns = ["news_count", *CATEGORY_COUNT_COLUMNS.values()]
+    daily[count_columns] = daily[count_columns].astype(int)
+    trading_days_with_news = int(daily["news_count"].gt(0).sum())
+    report = {
+        "jisdor_trading_days": len(daily),
+        "trading_days_with_candidate_news": trading_days_with_news,
+        "trading_days_with_zero_candidate_news": len(daily) - trading_days_with_news,
+        "aligned_candidate_articles_counted": counted_articles,
+        "news_count_sum": int(daily["news_count"].sum()),
+        "counts_reconcile": int(daily["news_count"].sum()) == counted_articles,
+        "policy": "All and only actual JISDOR observations are retained; no weekend or holiday rows are synthesized.",
+    }
+    return daily, report
+
+
+def write_daily_output(
+    aligned_news_path: str | Path,
+    jisdor_path: str | Path,
+    output_path: str | Path = DEFAULT_DAILY_OUTPUT,
+) -> tuple[pd.DataFrame, dict]:
+    aligned = pd.read_csv(aligned_news_path, keep_default_na=False)
+    jisdor = pd.read_csv(jisdor_path)
+    daily, report = aggregate_jisdor_daily(aligned, jisdor)
+    report.update(
+        {
+            "aligned_news_input": str(Path(aligned_news_path)),
+            "jisdor_input": str(Path(jisdor_path)),
+            "output_path": str(Path(output_path)),
+        }
+    )
+    _atomic_text(Path(output_path), daily.to_csv(index=False, lineterminator="\n"))
+    return daily, report
 
 
 def _exact_local_timestamp(row: Mapping, timezone_name: str) -> pd.Timestamp | None:
@@ -170,7 +250,17 @@ def align_exact_news_to_jisdor(
         reasons[reason] += 1
         if effective:
             effective_counts[effective.isoformat()] += 1
-    aligned = pd.DataFrame(rows)
+    alignment_columns = [
+        "effective_trade_date", "alignment_reason", "alignment_cutoff_wib",
+        "alignment_cutoff_source", "alignment_timestamp_used", "previous_jisdor",
+        "jisdor", "change_idr", "return_pct",
+    ]
+    aligned = pd.DataFrame(
+        rows,
+        columns=list(news.columns) + [
+            column for column in alignment_columns if column not in news.columns
+        ],
+    )
     aligned_count = int(aligned["effective_trade_date"].ne("").sum()) if not aligned.empty else 0
     missing_previous = int(
         aligned.loc[aligned["effective_trade_date"].ne(""), "previous_jisdor"].isna().sum()

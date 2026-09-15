@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from src.acquisition.cnbc_client import ArchivePage
+from src.acquisition.cnbc_client import ArchivePage, CnbcRequestError
 from src.acquisition.collect_cnbc import collect, validate_range
 
 
@@ -25,6 +25,23 @@ class Client:
             "0" * 64,
             100,
         )
+
+
+class SecondPageFailureClient:
+    def __init__(self):
+        self.stats = {"request_count": 2, "retry_count": 0}
+        self.last_partial_records = [
+            {"title": f"Story {index}", "url": f"https://www.cnbc.com/{index}.html"}
+            for index in range(250)
+        ]
+        self.last_reported_total_count = 260
+        self.last_attempt_evidence = [
+            {"page": 1, "http_status": 200, "result_count": 250},
+            {"page": 2, "http_status": 503},
+        ]
+
+    def fetch_day(self, day):
+        raise CnbcRequestError("CNBC HTTP 503 on page 2; exhausted 0 retries")
 
 
 def config():
@@ -68,3 +85,38 @@ def test_report_only_does_not_acquire_missing_days(tmp_path):
     assert not report["collection_complete"]
     assert report["request_count_this_run"] == 0
 
+
+def test_second_page_failure_keeps_day_failed_and_never_checkpoints_partial_completion(tmp_path):
+    raw = tmp_path / "raw"
+    report = collect(
+        config(), date(2021, 9, 1), date(2021, 9, 1),
+        raw_dir=raw, report_path=tmp_path / "report.json",
+        client=SecondPageFailureClient(),
+    )
+    attempt = json.loads(next(raw.rglob("archive.attempt-0001.json")).read_text())
+    checkpoint = json.loads((raw / "_checkpoints" / "2021-09-01.json").read_text())
+    assert not report["collection_complete"]
+    assert report["completed_days"] == []
+    assert attempt["status"] == checkpoint["status"] == "failed"
+    assert attempt["records"] == []
+    assert len(attempt["partial_records"]) == 250
+    assert attempt["reported_total_count"] == 260
+
+
+def test_collector_refuses_partial_page_labeled_as_complete(tmp_path):
+    class PartialClient(Client):
+        def fetch_day(self, day):
+            page = super().fetch_day(day)
+            return ArchivePage(
+                page.archive_date, page.archive_url, page.records, 2,
+                page.retrieved_at_utc, page.response_sha256, page.response_bytes,
+            )
+
+    raw = tmp_path / "raw"
+    report = collect(
+        config(), date(2021, 9, 1), date(2021, 9, 1),
+        raw_dir=raw, report_path=tmp_path / "report.json", client=PartialClient(),
+    )
+    checkpoint = json.loads((raw / "_checkpoints" / "2021-09-01.json").read_text())
+    assert not report["collection_complete"]
+    assert checkpoint["status"] == "failed"

@@ -106,7 +106,9 @@ def filter_dataframe(
     reason_counts = Counter()
     for source in enriched.to_dict(orient="records"):
         title_matches = match_taxonomy(str(source.get("title", "")), taxonomy)
-        publisher_keyword_values = _decode_list(source.get("keywords"))
+        publisher_keyword_values = _decode_list(
+            source.get("publisher_keywords", source.get("keywords"))
+        )
         publisher_matches = match_taxonomy(" | ".join(publisher_keyword_values), taxonomy)
         section_matches = _section_prior(source, priors)
         categories = sorted(set(title_matches) | set(publisher_matches))
@@ -150,7 +152,17 @@ def filter_dataframe(
         reason_counts[reason] += 1
         if candidate:
             category_counts.update(categories)
-    filtered = pd.DataFrame(rows)
+    decision_columns = [
+        "is_geopolitical_candidate", "matched_categories", "matched_keywords",
+        "filter_score", "filter_reason", "title_category_matches",
+        "publisher_keyword_category_matches", "matched_section_priors",
+    ]
+    filtered = pd.DataFrame(
+        rows,
+        columns=list(enriched.columns) + [
+            column for column in decision_columns if column not in enriched.columns
+        ],
+    )
     candidate_mask = filtered["is_geopolitical_candidate"] if not filtered.empty else pd.Series(dtype=bool)
     candidate_count = int(candidate_mask.sum()) if not filtered.empty else 0
     candidate_sections = Counter(
@@ -200,6 +212,7 @@ def filter_file(
     *,
     taxonomy_path: str | Path = ROOT / "config/geopolitical_topics.yaml",
     cnbc_config_path: str | Path = ROOT / "config/cnbc.yaml",
+    candidates_only: bool = False,
 ) -> tuple[pd.DataFrame, dict]:
     enriched = pd.read_csv(input_path, keep_default_na=False)
     taxonomy = yaml.safe_load(Path(taxonomy_path).read_text(encoding="utf-8"))
@@ -207,9 +220,15 @@ def filter_file(
     priors = config.get("filtering", {}).get("high_value_sections", [])
     filtered, report = filter_dataframe(enriched, taxonomy, high_value_sections=priors)
     report.update({"input_path": str(Path(input_path)), "output_path": str(Path(output_path)), "taxonomy_path": str(Path(taxonomy_path))})
-    _atomic_text(Path(output_path), filtered.to_csv(index=False, lineterminator="\n"))
+    output = (
+        filtered.loc[filtered["is_geopolitical_candidate"]].reset_index(drop=True)
+        if candidates_only and not filtered.empty else filtered
+    )
+    report["output_candidates_only"] = candidates_only
+    report["output_rows"] = len(output)
+    _atomic_text(Path(output_path), output.to_csv(index=False, lineterminator="\n"))
     _atomic_text(Path(report_path), json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
-    return filtered, report
+    return output, report
 
 
 def main(argv: list[str] | None = None) -> int:

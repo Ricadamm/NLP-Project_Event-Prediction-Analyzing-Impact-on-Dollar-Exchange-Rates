@@ -1,4 +1,4 @@
-"""Create a deterministic, category-balanced CNBC candidate review sample."""
+"""Create deterministic CNBC candidate and prefilter-reject review samples."""
 
 from __future__ import annotations
 
@@ -14,11 +14,13 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_INPUT = ROOT / "data/processed/cnbc_jisdor_aligned_v2.csv"
+DEFAULT_INPUT = ROOT / "data/interim/news/cnbc_news_candidates.csv"
 DEFAULT_OUTPUT = ROOT / "data/interim/news/cnbc_manual_review_sample.csv"
 DEFAULT_REPORT = ROOT / "data/interim/news/cnbc_manual_review_sample_report.json"
 COLUMNS = [
-    "article_id", "published_at_wib", "title", "url", "section",
+    "sample_group", "article_id", "published_at_wib", "title", "url", "section",
+    "prefilter_candidate", "prefilter_categories", "prefilter_keywords", "prefilter_reason",
+    "is_geopolitical_candidate",
     "matched_categories", "matched_keywords", "filter_reason",
     "human_relevant", "human_primary_category", "human_notes",
 ]
@@ -50,8 +52,9 @@ def _category_sequence(rows: list[dict], seed: int) -> deque:
     strata = defaultdict(list)
     for row in rows:
         publication_date = str(row.get("published_at_wib", ""))[:10] or str(row.get("canonical_url_date", ""))
+        publication_year = publication_date[:4] or "(missing)"
         section = str(row.get("section", "")) or "(missing)"
-        strata[(publication_date, section)].append(row)
+        strata[(publication_year, section)].append(row)
     queues = []
     for key in sorted(strata):
         ordered = sorted(strata[key], key=lambda row: _stable_key(str(row["article_id"]), seed))
@@ -97,11 +100,17 @@ def sample_candidates(frame: pd.DataFrame, n: int = 100, seed: int = 42) -> tupl
     for row in selected:
         output_rows.append(
             {
+                "sample_group": "final_candidate",
                 "article_id": row.get("article_id", ""),
                 "published_at_wib": row.get("published_at_wib", ""),
                 "title": row.get("title", ""),
                 "url": row.get("normalized_url", row.get("url", "")),
                 "section": row.get("section", ""),
+                "prefilter_candidate": row.get("prefilter_candidate", True),
+                "prefilter_categories": row.get("prefilter_categories", "[]"),
+                "prefilter_keywords": row.get("prefilter_keywords", "[]"),
+                "prefilter_reason": row.get("prefilter_reason", ""),
+                "is_geopolitical_candidate": row.get("is_geopolitical_candidate", True),
                 "matched_categories": row.get("matched_categories", "[]"),
                 "matched_keywords": row.get("matched_keywords", "[]"),
                 "filter_reason": row.get("filter_reason", ""),
@@ -125,13 +134,99 @@ def sample_candidates(frame: pd.DataFrame, n: int = 100, seed: int = 42) -> tupl
         "sampling_method": (
             "Assign each candidate to its alphabetically first matched category; balance categories "
             "round-robin; within each category round-robin publication-date/section strata; order "
-            "within strata by SHA-256(seed:article_id)."
+            "within year/section strata by SHA-256(seed:article_id)."
         ),
         "sampled_primary_category_counts": dict(sorted(sampled_category_counts.items())),
         "human_columns_blank": all(
             sample[column].eq("").all()
             for column in ("human_relevant", "human_primary_category", "human_notes")
         ) if not sample.empty else True,
+    }
+    return sample, report
+
+
+def _reject_year(row: dict) -> str:
+    discovered = _decode_list(row.get("discovered_for_date"))
+    value = discovered[0] if discovered else str(row.get("publication_date", ""))
+    return value[:4] if len(value) >= 4 else "(missing)"
+
+
+def sample_review_sets(
+    final_candidates: pd.DataFrame,
+    prefiltered: pd.DataFrame,
+    *,
+    candidate_n: int = 100,
+    reject_n: int = 100,
+    seed: int = 42,
+) -> tuple[pd.DataFrame, dict]:
+    """Combine a stratified final-candidate sample with prefilter rejects."""
+    candidate_sample, candidate_report = sample_candidates(
+        final_candidates, n=candidate_n, seed=seed
+    )
+    if "prefilter_candidate" not in prefiltered.columns:
+        raise ValueError("Prefilter review input must contain prefilter_candidate")
+    rejects = [
+        row for row in prefiltered.to_dict(orient="records")
+        if not _candidate(row.get("prefilter_candidate"))
+    ]
+    by_year = defaultdict(list)
+    for row in rejects:
+        by_year[_reject_year(row)].append(row)
+    queues = {
+        year: deque(sorted(rows, key=lambda row: _stable_key(str(row.get("article_id", "")), seed)))
+        for year, rows in sorted(by_year.items())
+    }
+    selected_rejects = []
+    target = min(reject_n, len(rejects))
+    while len(selected_rejects) < target:
+        progressed = False
+        for year in sorted(queues):
+            if queues[year] and len(selected_rejects) < target:
+                selected_rejects.append(queues[year].popleft())
+                progressed = True
+        if not progressed:
+            break
+    reject_rows = []
+    for row in selected_rejects:
+        reject_rows.append(
+            {
+                "sample_group": "prefilter_reject",
+                "article_id": row.get("article_id", ""),
+                "published_at_wib": "",
+                "title": row.get("title", ""),
+                "url": row.get("normalized_url", row.get("url", "")),
+                "section": "",
+                "prefilter_candidate": False,
+                "prefilter_categories": row.get("prefilter_categories", "[]"),
+                "prefilter_keywords": row.get("prefilter_keywords", "[]"),
+                "prefilter_reason": row.get("prefilter_reason", ""),
+                "is_geopolitical_candidate": "",
+                "matched_categories": "[]",
+                "matched_keywords": "[]",
+                "filter_reason": "not_enriched_due_to_prefilter_reject",
+                "human_relevant": "",
+                "human_primary_category": "",
+                "human_notes": "",
+            }
+        )
+    sample = pd.concat(
+        [candidate_sample, pd.DataFrame(reject_rows, columns=COLUMNS)],
+        ignore_index=True,
+    )
+    report = {
+        "random_seed": seed,
+        "candidate_population": candidate_report["candidate_population"],
+        "candidate_sample_size": len(candidate_sample),
+        "prefilter_reject_population": len(rejects),
+        "prefilter_reject_sample_size": len(reject_rows),
+        "sample_size": len(sample),
+        "candidate_sampling": candidate_report["sampling_method"],
+        "reject_sampling": "Round-robin across discovery years, then SHA-256(seed:article_id).",
+        "human_columns_blank": all(
+            sample[column].eq("").all()
+            for column in ("human_relevant", "human_primary_category", "human_notes")
+        ) if not sample.empty else True,
+        "limitation": "Prefilter rejects have no publisher metadata because they were not enriched.",
     }
     return sample, report
 
@@ -161,6 +256,33 @@ def sample_file(
     frame = pd.read_csv(input_path, keep_default_na=False)
     sample, report = sample_candidates(frame, n=n, seed=seed)
     report.update({"input_path": str(Path(input_path)), "output_path": str(Path(output_path))})
+    _atomic_text(Path(output_path), sample.to_csv(index=False, lineterminator="\n"))
+    _atomic_text(Path(report_path), json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    return sample, report
+
+
+def sample_validation_files(
+    candidate_path: str | Path,
+    prefiltered_path: str | Path,
+    output_path: str | Path = DEFAULT_OUTPUT,
+    report_path: str | Path = DEFAULT_REPORT,
+    *,
+    candidate_n: int = 100,
+    reject_n: int = 100,
+    seed: int = 42,
+) -> tuple[pd.DataFrame, dict]:
+    candidates = pd.read_csv(candidate_path, keep_default_na=False)
+    prefiltered = pd.read_csv(prefiltered_path, keep_default_na=False)
+    sample, report = sample_review_sets(
+        candidates, prefiltered, candidate_n=candidate_n, reject_n=reject_n, seed=seed
+    )
+    report.update(
+        {
+            "candidate_input": str(Path(candidate_path)),
+            "prefiltered_input": str(Path(prefiltered_path)),
+            "output_path": str(Path(output_path)),
+        }
+    )
     _atomic_text(Path(output_path), sample.to_csv(index=False, lineterminator="\n"))
     _atomic_text(Path(report_path), json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     return sample, report

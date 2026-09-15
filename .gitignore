@@ -43,3 +43,27 @@ data/raw/news/gdelt/2021/*/
 !data/raw/news/gdelt/2021/2021-09-05/
 !data/raw/news/gdelt/2021/2021-09-06/
 !data/raw/news/gdelt/2021/2021-09-07/
+
+# CNBC proof-of-concept: keep only immutable Sep 1-7 raw attempts, not checkpoints.
+data/raw/news/cnbc/_checkpoints/
+# Article metadata is a resumable runtime cache and can contain thousands of files.
+data/raw/news/cnbc/article_metadata/
+data/raw/news/cnbc/*/
+!data/raw/news/cnbc/2021/
+data/raw/news/cnbc/2021/*/
+!data/raw/news/cnbc/2021/2021-09-01/
+!data/raw/news/cnbc/2021/2021-09-02/
+!data/raw/news/cnbc/2021/2021-09-03/
+!data/raw/news/cnbc/2021/2021-09-04/
+!data/raw/news/cnbc/2021/2021-09-05/
+!data/raw/news/cnbc/2021/2021-09-06/
+!data/raw/news/cnbc/2021/2021-09-07/
+
+# Full-range CNBC row-level artifacts can be regenerated from raw evidence and
+# checkpoints. Keep compact QA JSON and the manual-review sample trackable.
+data/interim/news/cnbc_article_index.csv
+data/interim/news/cnbc_prefiltered.csv
+data/interim/news/cnbc_enrichment_queue.csv
+data/interim/news/cnbc_news_enriched.csv
+data/interim/news/cnbc_news_candidates.csv
+data/processed/cnbc_jisdor_aligned.csv

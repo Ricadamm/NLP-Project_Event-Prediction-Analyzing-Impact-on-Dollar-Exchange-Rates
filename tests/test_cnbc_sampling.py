@@ -1,6 +1,8 @@
 import pandas as pd
 
-from src.preprocessing.sample_cnbc_review import COLUMNS, sample_candidates
+from src.preprocessing.sample_cnbc_review import (
+    COLUMNS, sample_candidates, sample_review_sets,
+)
 
 
 def frame():
@@ -35,3 +37,29 @@ def test_all_candidates_are_included_when_population_is_small():
     assert len(sample) == 3
     assert report["sample_size"] == 3
 
+
+def test_review_sample_includes_prefilter_rejects_with_blank_labels():
+    prefiltered = pd.DataFrame([
+        {
+            "article_id": f"reject-{index}",
+            "prefilter_candidate": False,
+            "prefilter_categories": "[]",
+            "prefilter_keywords": "[]",
+            "prefilter_reason": "no_title_or_url_prefilter_match",
+            "title": f"Reject {index}",
+            "normalized_url": f"https://www.cnbc.com/{2021 + index}/reject.html",
+            "publication_date": f"{2021 + index}-01-01",
+            "discovered_for_date": f'["{2021 + index}-01-01"]',
+        }
+        for index in range(3)
+    ])
+    sample, report = sample_review_sets(
+        frame(), prefiltered, candidate_n=4, reject_n=2, seed=42
+    )
+    assert sample.sample_group.value_counts().to_dict() == {
+        "final_candidate": 4, "prefilter_reject": 2,
+    }
+    rejects = sample.loc[sample.sample_group == "prefilter_reject"]
+    assert rejects["section"].eq("").all()
+    assert sample[["human_relevant", "human_primary_category", "human_notes"]].eq("").all().all()
+    assert report["prefilter_reject_sample_size"] == 2

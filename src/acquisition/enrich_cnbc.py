@@ -1,6 +1,6 @@
-"""Fetch and cache publisher metadata for an existing bounded CNBC pilot.
+"""Fetch and cache publisher metadata for prefiltered CNBC candidates.
 
-Only URLs already present in the cleaned pilot are visited. Successful HTTP
+Only URLs present in the supplied enrichment queue are visited. Successful HTTP
 responses are reduced to structured metadata and stored as one JSON record per
 article ID; raw HTML is not retained. Missing publisher timestamps stay missing.
 """
@@ -10,12 +10,14 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from collections.abc import Mapping
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from datetime import date, datetime, timezone
 import json
 import math
 import os
 from pathlib import Path
 import tempfile
+import threading
 import time
 from urllib.parse import urlsplit
 
@@ -26,7 +28,7 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_INPUT = ROOT / "data/interim/news/cnbc_news_clean.csv"
+DEFAULT_INPUT = ROOT / "data/interim/news/cnbc_enrichment_queue.csv"
 DEFAULT_CACHE = ROOT / "data/raw/news/cnbc/article_metadata"
 DEFAULT_OUTPUT = ROOT / "data/interim/news/cnbc_news_enriched.csv"
 DEFAULT_REPORT = ROOT / "data/interim/news/cnbc_enrichment_report.json"
@@ -282,7 +284,7 @@ def _number(config: Mapping, key: str, default: float, minimum: float) -> float:
 
 
 class CnbcArticleClient:
-    """Polite serial article client with bounded retry behavior."""
+    """Polite per-worker article client with bounded retry behavior."""
 
     def __init__(self, config: Mapping, session=None, sleep=time.sleep, monotonic=time.monotonic):
         self.config = dict(config)
@@ -383,105 +385,282 @@ def _discovery_dates(value) -> list[str]:
     return sorted(set(valid))
 
 
+def _completed_cache(cache_path: Path, url: str) -> dict | None:
+    """Return a compatible completed cache record, ignoring invalid files."""
+    if not cache_path.exists():
+        return None
+    try:
+        cached = json.loads(cache_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(cached, dict):
+        return None
+    if (
+        cached.get("status") == "completed"
+        and cached.get("url") == url
+        and cached.get("parser_version") == PARSER_VERSION
+    ):
+        return cached
+    return None
+
+
+def _fetch_and_cache(
+    article_id: str,
+    url: str,
+    cache_path: Path,
+    client,
+) -> dict:
+    """Fetch one article and atomically persist its success or failure record."""
+    try:
+        extracted = client.fetch(url)
+        metadata = {
+            "status": "completed",
+            "article_id": article_id,
+            "url": url,
+            "parser_version": PARSER_VERSION,
+            "retrieved_at_utc": datetime.now(timezone.utc).isoformat(),
+            **extracted,
+        }
+    except CnbcArticleError as exc:
+        metadata = {
+            "status": "failed",
+            "article_id": article_id,
+            "url": url,
+            "parser_version": PARSER_VERSION,
+            "http_status": exc.http_status,
+            "failed_at_utc": datetime.now(timezone.utc).isoformat(),
+            "error": str(exc),
+        }
+    except Exception as exc:
+        # A malformed response or an unexpected client error is isolated to the
+        # article so the rest of a production queue can continue.
+        metadata = {
+            "status": "failed",
+            "article_id": article_id,
+            "url": url,
+            "parser_version": PARSER_VERSION,
+            "http_status": None,
+            "failed_at_utc": datetime.now(timezone.utc).isoformat(),
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+    _atomic_json(cache_path, metadata)
+    return metadata
+
+
 def enrich_dataframe(
     pilot: pd.DataFrame,
     *,
     cache_dir: str | Path = DEFAULT_CACHE,
     client=None,
+    client_factory=None,
+    config: Mapping | None = None,
+    enrichment_workers: int = 1,
     force: bool = False,
     cache_only: bool = False,
-    progress_every: int = 10,
+    progress_every: int = 100,
 ) -> tuple[pd.DataFrame, dict]:
     required = {"article_id", "normalized_url", "publication_date", "discovered_for_date"}
     if not required.issubset(pilot.columns):
         raise ValueError(f"Pilot input is missing columns: {sorted(required - set(pilot.columns))}")
-    if pilot["article_id"].duplicated().any():
+    if pilot["article_id"].map(str).duplicated().any():
         raise ValueError("Pilot article_id values must be unique")
+    if (
+        isinstance(enrichment_workers, bool)
+        or not isinstance(enrichment_workers, int)
+        or enrichment_workers < 1
+    ):
+        raise ValueError("enrichment_workers must be a positive integer")
+    if client is not None and client_factory is not None:
+        raise ValueError("Supply either client or client_factory, not both")
+    if client is not None and enrichment_workers != 1:
+        raise ValueError(
+            "A shared client is only supported with enrichment_workers=1; "
+            "use client_factory for parallel enrichment"
+        )
     cache_dir = Path(cache_dir)
-    own_client = client is None and not cache_only
-    worker = client or (None if cache_only else CnbcArticleClient({}))
-    rows = []
+    sources = pilot.to_dict(orient="records")
+    metadata_by_index: dict[int, dict] = {}
+    pending: list[tuple[int, str, str, Path]] = []
     cache_hits = live_successes = failed_fetch_attempts = 0
-    try:
-        for index, source in enumerate(pilot.to_dict(orient="records"), start=1):
-            article_id = str(source["article_id"])
-            url = str(source["normalized_url"])
-            cache_path = cache_dir / f"{article_id}.json"
-            metadata = None
-            if cache_path.exists() and not force:
-                cached = json.loads(cache_path.read_text(encoding="utf-8"))
-                if (
-                    cached.get("status") == "completed"
-                    and cached.get("url") == url
-                    and cached.get("parser_version") == PARSER_VERSION
-                ):
-                    metadata = cached
-                    cache_hits += 1
-            if metadata is None and cache_only:
-                metadata = {"status": "failed", "url": url, "error": "cache_miss"}
-                failed_fetch_attempts += 1
-            elif metadata is None:
-                try:
-                    extracted = worker.fetch(url)
-                    metadata = {
-                        "status": "completed",
-                        "article_id": article_id,
-                        "url": url,
-                        "parser_version": PARSER_VERSION,
-                        "retrieved_at_utc": datetime.now(timezone.utc).isoformat(),
-                        **extracted,
-                    }
-                    live_successes += 1
-                except CnbcArticleError as exc:
-                    metadata = {
-                        "status": "failed",
-                        "article_id": article_id,
-                        "url": url,
-                        "parser_version": PARSER_VERSION,
-                        "http_status": exc.http_status,
-                        "failed_at_utc": datetime.now(timezone.utc).isoformat(),
-                        "error": str(exc),
-                    }
-                    failed_fetch_attempts += 1
-                _atomic_json(cache_path, metadata)
-            row = dict(source)
-            discoveries = _discovery_dates(source.get("discovered_for_date"))
-            canonical_date = str(source.get("publication_date", ""))
-            row.update(
-                {
-                    "sitemap_date": discoveries[0] if len(discoveries) == 1 else "",
-                    "sitemap_dates": _json(discoveries),
-                    "canonical_url_date": canonical_date,
-                    "published_at_original": metadata.get("published_at_original"),
-                    "published_at_utc": metadata.get("published_at_utc"),
-                    "published_at_wib": metadata.get("published_at_wib"),
-                    "timestamp_source": metadata.get("timestamp_source"),
-                    "timestamp_status": metadata.get("timestamp_status", "fetch_failed"),
-                    "sitemap_vs_published_date_match": _comparison(discoveries, metadata.get("published_at_original")),
-                    "url_date_vs_published_date_match": _comparison([canonical_date] if canonical_date else [], metadata.get("published_at_original")),
-                    "section": metadata.get("section"),
-                    "subsection": metadata.get("subsection"),
-                    "section_source": metadata.get("section_source"),
-                    "article_type": metadata.get("article_type"),
-                    "keywords": _json(metadata.get("keywords", [])),
-                    "publisher_categories": _json(metadata.get("publisher_categories", [])),
-                    "authors": _json(metadata.get("authors", [])),
-                    "article_metadata_status": metadata.get("status"),
-                    "article_metadata_error": metadata.get("error"),
-                }
-            )
-            row["timestamp_semantics"] = (
-                "exact_publisher_timestamp" if metadata.get("timestamp_status") == "exact_publisher_timestamp"
-                else "missing_publisher_timestamp"
-            )
-            rows.append(row)
-            if progress_every and (index % progress_every == 0 or index == len(pilot)):
-                print(f"CNBC enrichment progress: {index}/{len(pilot)}", flush=True)
-    finally:
-        if own_client and worker is not None:
-            worker.close()
+    completed = 0
 
-    enriched = pd.DataFrame(rows)
+    def report_progress() -> None:
+        if progress_every and (
+            completed % progress_every == 0 or completed == len(sources)
+        ):
+            print(f"CNBC candidate enrichment: {completed}/{len(sources)}", flush=True)
+
+    # Cache preflight deliberately happens before executor submission. Completed
+    # compatible records never enter the worker queue.
+    for index, source in enumerate(sources):
+        article_id = str(source["article_id"])
+        url = str(source["normalized_url"])
+        cache_path = cache_dir / f"{article_id}.json"
+        # A valid completed record is immutable resume evidence, including when
+        # --force is present. Failed, missing, or incompatible records are still
+        # eligible for a new attempt.
+        metadata = _completed_cache(cache_path, url)
+        if metadata is None:
+            pending.append((index, article_id, url, cache_path))
+        else:
+            metadata_by_index[index] = metadata
+            cache_hits += 1
+            completed += 1
+            report_progress()
+
+    clients = []
+    clients_lock = threading.Lock()
+    own_clients = client is None
+
+    def make_client():
+        created = client_factory() if client_factory is not None else CnbcArticleClient(config or {})
+        with clients_lock:
+            clients.append(created)
+        return created
+
+    if cache_only:
+        for index, _article_id, url, _cache_path in pending:
+            metadata_by_index[index] = {
+                "status": "failed", "url": url, "error": "cache_miss"
+            }
+            failed_fetch_attempts += 1
+            completed += 1
+            report_progress()
+    elif enrichment_workers == 1:
+        worker = client if client is not None else make_client()
+        if client is not None:
+            clients.append(client)
+        try:
+            for index, article_id, url, cache_path in pending:
+                metadata = _fetch_and_cache(article_id, url, cache_path, worker)
+                metadata_by_index[index] = metadata
+                if metadata["status"] == "completed":
+                    live_successes += 1
+                else:
+                    failed_fetch_attempts += 1
+                completed += 1
+                report_progress()
+        finally:
+            if own_clients:
+                close = getattr(worker, "close", None)
+                if close is not None:
+                    close()
+    else:
+        thread_state = threading.local()
+
+        def initialize_worker() -> None:
+            thread_state.client = make_client()
+
+        def run_pending(item: tuple[int, str, str, Path]) -> tuple[int, dict]:
+            index, article_id, url, cache_path = item
+            metadata = _fetch_and_cache(
+                article_id, url, cache_path, thread_state.client
+            )
+            return index, metadata
+
+        executor = ThreadPoolExecutor(
+            max_workers=enrichment_workers,
+            thread_name_prefix="cnbc-enrichment",
+            initializer=initialize_worker,
+        )
+        pending_iterator = iter(pending)
+        futures = {}
+        try:
+            # Keep only N futures submitted at a time. This bounds both HTTP
+            # concurrency and the executor queue, making interruption/resume
+            # prompt even for a multi-thousand-article production queue.
+            for _ in range(enrichment_workers):
+                item = next(pending_iterator, None)
+                if item is None:
+                    break
+                futures[executor.submit(run_pending, item)] = item[0]
+            while futures:
+                done, _ = wait(futures, return_when=FIRST_COMPLETED)
+                for future in done:
+                    futures.pop(future)
+                    index, metadata = future.result()
+                    metadata_by_index[index] = metadata
+                    if metadata["status"] == "completed":
+                        live_successes += 1
+                    else:
+                        failed_fetch_attempts += 1
+                    completed += 1
+                    report_progress()
+                    item = next(pending_iterator, None)
+                    if item is not None:
+                        futures[executor.submit(run_pending, item)] = item[0]
+        except BaseException:
+            for future in futures:
+                future.cancel()
+            executor.shutdown(wait=True, cancel_futures=True)
+            raise
+        else:
+            executor.shutdown(wait=True)
+        finally:
+            if own_clients:
+                for worker in clients:
+                    close = getattr(worker, "close", None)
+                    if close is not None:
+                        close()
+
+    rows = []
+    for index, source in enumerate(sources):
+        metadata = metadata_by_index[index]
+        row = dict(source)
+        discoveries = _discovery_dates(source.get("discovered_for_date"))
+        canonical_date = str(source.get("publication_date", ""))
+        raw_timestamp_status = metadata.get("timestamp_status", "fetch_failed")
+        timestamp_status = (
+            "exact_publisher_timestamp"
+            if raw_timestamp_status == "exact_publisher_timestamp"
+            else "unresolved"
+        )
+        row.update(
+            {
+                "sitemap_date": discoveries[0] if len(discoveries) == 1 else "",
+                "sitemap_dates": _json(discoveries),
+                "canonical_url_date": canonical_date,
+                "published_at_original": metadata.get("published_at_original"),
+                "published_at_utc": metadata.get("published_at_utc"),
+                "published_at_wib": metadata.get("published_at_wib"),
+                "timestamp_source": metadata.get("timestamp_source"),
+                "timestamp_status": timestamp_status,
+                "timestamp_resolution_detail": raw_timestamp_status,
+                "sitemap_vs_published_date_match": _comparison(discoveries, metadata.get("published_at_original")),
+                "url_date_vs_published_date_match": _comparison([canonical_date] if canonical_date else [], metadata.get("published_at_original")),
+                "section": metadata.get("section"),
+                "subsection": metadata.get("subsection"),
+                "section_source": metadata.get("section_source"),
+                "article_type": metadata.get("article_type"),
+                "keywords": _json(metadata.get("keywords", [])),
+                "publisher_keywords": _json(metadata.get("keywords", [])),
+                "publisher_categories": _json(metadata.get("publisher_categories", [])),
+                "authors": _json(metadata.get("authors", [])),
+                "article_metadata_status": metadata.get("status"),
+                "article_metadata_error": metadata.get("error"),
+            }
+        )
+        row["timestamp_semantics"] = (
+            "exact_publisher_timestamp" if metadata.get("timestamp_status") == "exact_publisher_timestamp"
+            else "missing_publisher_timestamp"
+        )
+        rows.append(row)
+
+    if rows:
+        enriched = pd.DataFrame(rows)
+    else:
+        enriched = pilot.copy()
+        for column in (
+            "sitemap_date", "sitemap_dates", "canonical_url_date",
+            "published_at_original", "published_at_utc", "published_at_wib",
+            "timestamp_source", "timestamp_status", "timestamp_resolution_detail",
+            "sitemap_vs_published_date_match",
+            "url_date_vs_published_date_match", "section", "subsection", "section_source",
+            "article_type", "keywords", "publisher_keywords", "publisher_categories",
+            "authors", "article_metadata_status", "article_metadata_error",
+            "timestamp_semantics",
+        ):
+            enriched[column] = pd.Series(dtype="object")
     timestamp_counts = Counter(enriched["timestamp_source"].fillna("(missing)"))
     section_counts = Counter(enriched["section"].fillna("(missing)"))
     section_source_counts = Counter(enriched["section_source"].fillna("(missing)"))
@@ -492,14 +671,20 @@ def enrich_dataframe(
     section_count = int(enriched["section"].notna().sum())
     successful_records = int((enriched["article_metadata_status"] == "completed").sum())
     failed_records = len(enriched) - successful_records
-    stats = getattr(worker, "stats", {}) if worker is not None else {}
+    stats = {
+        "request_count": sum(getattr(worker, "stats", {}).get("request_count", 0) for worker in clients),
+        "retry_count": sum(getattr(worker, "stats", {}).get("retry_count", 0) for worker in clients),
+    }
     report = {
+        "total_candidate_articles": len(pilot),
+        # Backward-compatible report key retained for the validated pilot.
         "total_pilot_articles": len(pilot),
         "successful_http_fetches": successful_records,
         "successful_http_fetches_this_run": live_successes,
         "failed_fetches": failed_records,
         "failed_fetch_attempts_this_run": failed_fetch_attempts,
         "cache_hits": cache_hits,
+        "enrichment_workers": enrichment_workers,
         "http_request_count_this_run": stats.get("request_count", 0),
         "http_retry_count_this_run": stats.get("retry_count", 0),
         "exact_publisher_timestamps": exact_count,
@@ -517,6 +702,7 @@ def enrich_dataframe(
         },
         "date_comparison_basis": "Calendar date in the publisher timestamp's original timezone offset",
         "cache_only": cache_only,
+        "force_enrichment_requested": force,
         "timestamp_hierarchy": [
             "jsonld.datePublished", "structured publication meta tag",
             "CNBC structured page metadata", "rendered publication time",
@@ -536,16 +722,13 @@ def enrich_file(
     cache_dir: str | Path = DEFAULT_CACHE,
     force: bool = False,
     cache_only: bool = False,
+    enrichment_workers: int = 1,
 ) -> tuple[pd.DataFrame, dict]:
     pilot = pd.read_csv(input_path, keep_default_na=False)
-    worker = None if cache_only else CnbcArticleClient(config or {})
-    try:
-        enriched, report = enrich_dataframe(
-            pilot, cache_dir=cache_dir, client=worker, force=force, cache_only=cache_only
-        )
-    finally:
-        if worker is not None:
-            worker.close()
+    enriched, report = enrich_dataframe(
+        pilot, cache_dir=cache_dir, config=config, force=force,
+        cache_only=cache_only, enrichment_workers=enrichment_workers,
+    )
     report.update({"input_path": str(Path(input_path)), "output_path": str(Path(output_path)), "cache_directory": str(Path(cache_dir))})
     _atomic_text(Path(output_path), enriched.to_csv(index=False, lineterminator="\n"))
     _atomic_json(Path(report_path), report)
@@ -561,10 +744,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--config", type=Path, default=ROOT / "config/cnbc.yaml")
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--cache-only", action="store_true")
+    parser.add_argument("--enrichment-workers", type=int, default=1)
     args = parser.parse_args(argv)
     config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
     enrich_file(args.input, args.output, args.report, config=config["article_metadata"],
-                cache_dir=args.cache_dir, force=args.force, cache_only=args.cache_only)
+                cache_dir=args.cache_dir, force=args.force, cache_only=args.cache_only,
+                enrichment_workers=args.enrichment_workers)
     return 0
 
 
