@@ -1,11 +1,15 @@
+"""Compatibility CLI for the Task 1 GDELT candidate collector.
+
+Example: python src/scraper_news.py --pilot
+Explicit dates (or --pilot) are required to prevent accidental full scraping.
 """
-scraper_news.py — News Data Scraper
+from pathlib import Path
+import sys
 
-Scrapes geopolitical news articles from GDELT Project for the period
-September 2021 – September 2026. Outputs raw news data to data/raw/.
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-Usage:
-    python src/scraper_news.py
-"""
+from src.acquisition.collect_gdelt import main
 
-# TODO: Implement news scraping logic
+if __name__ == "__main__":
+    sys.exit(main())
