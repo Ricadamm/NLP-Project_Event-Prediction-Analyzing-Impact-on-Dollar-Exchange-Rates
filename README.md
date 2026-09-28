@@ -57,15 +57,6 @@ The repository contains JISDOR observations for the study period and retains onl
 │   │   ├── .gitkeep
 │   │   ├── Informasi Kurs Jisdor.xlsx
 │   │   └── cnbc_article.gz
-├── .gitignore
-├── README.md
-├── requirements.txt
-│
-├── data/
-│   ├── raw/
-│   │   ├── .gitkeep
-│   │   ├── Informasi Kurs Jisdor.xlsx
-│   │   └── sample_GDELTS_Raw_Data.tsv
 │   │
 │   └── processed/
 │       ├── .gitkeep
@@ -105,93 +96,7 @@ The repository contains JISDOR observations for the study period and retains onl
     ├── preprocess_USDExchangeRate.py
     ├── run_task1.py
     └── scraper_news.py
-├── .gitignore
-├── README.md
-├── requirements.txt
-│
-├── data/
-│   ├── raw/
-│   │   ├── .gitkeep
-│   │   ├── Informasi Kurs Jisdor.xlsx
-│   │   └── sample_GDELTS_Raw_Data.tsv
-│   │
-│   └── processed/
-│       ├── .gitkeep
-│       ├── cnbc_full_collection_report.json
-│       ├── cnbc_jisdor_daily.csv
-│       └── usd_idr_jisdor_cleaned.csv
-│
-└── src/
-    ├── __init__.py
-    │
-    ├── acquisition/
-    │   ├── __init__.py
-    │   ├── cnbc_client.py
-    │   ├── collect_cnbc.py
-    │   ├── collect_gdelt.py
-    │   ├── enrich_cnbc.py
-    │   └── gdelt_client.py
-    │
-    ├── alignment/
-    │   ├── __init__.py
-    │   └── align_news_jisdor.py
-    │
-    ├── pipeline/
-    │   ├── __init__.py
-    │   └── run_task1.py
-    │
-    ├── preprocessing/
-    │   ├── __init__.py
-    │   ├── clean_cnbc.py
-    │   ├── clean_jisdor.py
-    │   ├── clean_news.py
-    │   ├── filter_cnbc.py
-    │   ├── prefilter_cnbc.py
-    │   └── sample_cnbc_review.py
-    │
-    ├── data_alignment.py
-    ├── preprocess_USDExchangeRate.py
-    ├── run_task1.py
-    └── scraper_news.py
-│   │
-│   └── processed/
-│       ├── .gitkeep
-│       ├── cnbc_full_collection_report.json
-│       ├── cnbc_jisdor_daily.csv
-│       └── usd_idr_jisdor_cleaned.csv
-│
-└── src/
-    ├── __init__.py
-    │
-    ├── acquisition/
-    │   ├── __init__.py
-    │   ├── cnbc_client.py
-    │   ├── collect_cnbc.py
-    │   ├── collect_gdelt.py
-    │   ├── enrich_cnbc.py
-    │   └── gdelt_client.py
-    │
-    ├── alignment/
-    │   ├── __init__.py
-    │   └── align_news_jisdor.py
-    │
-    ├── pipeline/
-    │   ├── __init__.py
-    │   └── run_task1.py
-    │
-    ├── preprocessing/
-    │   ├── __init__.py
-    │   ├── clean_cnbc.py
-    │   ├── clean_jisdor.py
-    │   ├── clean_news.py
-    │   ├── filter_cnbc.py
-    │   ├── prefilter_cnbc.py
-    │   └── sample_cnbc_review.py
-    │
-    ├── data_alignment.py
-    ├── preprocess_USDExchangeRate.py
-    ├── run_task1.py
-    └── scraper_news.py
+
 ```
 
 ### Source-Code Organization
