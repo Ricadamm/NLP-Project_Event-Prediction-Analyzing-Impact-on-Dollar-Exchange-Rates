@@ -1,20 +1,10 @@
-"""
-Task 2 - Naive baseline models for JISDOR direction prediction.
-
-Two naive baselines (no news features, no modeling - just simple rules):
-  1. Majority class: always predict the most common direction seen in training.
-  2. Persistence: predict today's direction will be the same as yesterday's.
-
-Input : data/processed/model_ready_daily.csv
-"""
-
 from pathlib import Path
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score
 
 DATA_CSV = Path(r"C:\Users\MSI\Downloads\model_ready_daily.csv")
 
-# 1. Load data, sorted chronologically
+# 1. Load data
 df = pd.read_csv(DATA_CSV)
 df["date"] = pd.to_datetime(df["date"])
 df = df.sort_values("date").reset_index(drop=True)
@@ -37,10 +27,8 @@ majority_class = train["direction"].mode()[0]
 pred_majority = [majority_class] * len(test)
 
 # 4. Baseline 2: persistence (predict same as previous day's actual direction)
-# shift(1) on the full df keeps the join to "yesterday" correct even across the train/test boundary
 df["pred_persistence"] = df["direction"].shift(1)
 pred_persistence = df.loc[test.index, "pred_persistence"]
-# first row of the whole dataset has no "yesterday" - drop it if it fell into test
 valid = pred_persistence.notna()
 
 y_true = test["direction"]
