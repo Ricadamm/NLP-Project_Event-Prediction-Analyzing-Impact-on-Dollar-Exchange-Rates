@@ -108,7 +108,6 @@ The repository contains JISDOR observations for the study period and retains onl
 - `src/data_alignment.py` — shared JISDOR validation utilities plus the earlier alignment implementation currently referenced by the strict aligner.
 - `src/preprocess_USDExchangeRate.py` — original JISDOR preprocessing script retained from the initial project implementation.
 - `src/run_task1.py` — compatibility entry point for `src.pipeline.run_task1`.
-- `src/scraper_news.py` — compatibility entry point for the GDELT collector.
 
 ---
 
