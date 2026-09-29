@@ -6,7 +6,7 @@ Pipeline: `python3 -m src.pipeline.run_task2` (config: `config/task2.yaml`). Ful
 
 **No evidence that CNBC headline features add predictive value for next-day USD/IDR direction, at this sample size.**
 
-The pre-registered decision rule (docs/task2_plan.md, section 3.5) requires the full model (M4) to beat the price-only baseline (B2) on test in *both* accuracy and macro-F1, with a McNemar test p < 0.05. M4 matched B2's accuracy improvement direction on macro-F1 only, and McNemar gave p = 0.358 (not significant). None of the four NLP feature variants (M1-M4) beat B2 on accuracy.
+The pre-registered decision rule (docs/task2_plan.md, section 3.5) requires the full model (M4) to beat the price-only baseline (B2) on test in *both* accuracy and macro-F1, with a McNemar test p < 0.05. M4 beat B2 on macro-F1 only (0.488 vs. 0.470), not on accuracy (0.500 vs. 0.545), and McNemar gave p = 0.358 (not significant). None of the four NLP feature variants (M1-M4) beat B2 on accuracy.
 
 This is reported as a negative result, not reframed as a positive one — see Limitations for why this is plausible rather than a pipeline defect.
 
@@ -16,10 +16,10 @@ This is reported as a negative result, not reframed as a positive one — see Li
 |---|---|
 | Headlines | 10,997 (`data/processed/cnbc_headlines_aligned.csv`), full timestamp fidelity, verified against Task 1's committed daily counts (zero mismatches) |
 | Modeling rows | 1,181 trading days (1,202 JISDOR days − 20 warm-up − 1 no-target day) |
-| Train | 825 days, ending 2025-02-25 |
-| Validation | 176 days, ending 2025-11-25 |
+| Train | 825 days, 2021-09-29 → 2025-02-24 |
+| Validation | 176 days, 2025-02-26 → 2025-11-24 |
 | Test | 178 days, 2025-11-26 → 2026-08-31 |
-| Purge | 2 trading days at each split boundary (1-day target purge + the boundary day itself) |
+| Purge | 1 trading day dropped at each boundary (2025-02-25, 2025-11-25), because its next-day target would use the first price of the following split |
 | Class balance (y=1, next day up) | train 55.8%, validation 51.7%, test 57.9% |
 
 ## Test-set metrics
@@ -40,7 +40,7 @@ Note B0 wins on raw accuracy only because the test period happens to be unusuall
 
 ## Primary significance test
 
-McNemar (M4 vs. B2, same 178 test days): **p = 0.358**. B2 corrected 44 days M4 got wrong; M4 corrected 39 days B2 got wrong — a small, statistically indistinguishable difference in opposite-error patterns.
+McNemar (M4 vs. B2, same 178 test days): **p = 0.358**. B2 was right on 33 days where M4 was wrong; M4 was right on 25 days where B2 was wrong. That 8-day gap is the whole accuracy difference (97 vs. 89 correct), and it is not statistically distinguishable from chance.
 
 ## Walk-forward robustness check (supplementary)
 
@@ -59,11 +59,11 @@ B2 outperforms M4 on average across this much larger out-of-sample window too. T
 
 | Feature | Coefficient | Reading |
 |---|--:|---|
-| `log_news_count` | −0.613 | More total news that day → lower P(up) next day |
-| `log_trade_conflict_count` | +0.478 | More trade-conflict headlines → higher P(up) |
-| `log_monetary_geoeconomic_count` | +0.423 | More monetary/geoeconomic headlines → higher P(up) |
-| `political_instability_lm_neg` | −0.400 | Negative-toned political-instability headlines → lower P(up) |
-| `ma_distance_20` | −0.306 | Price above its 20-day average → lower P(up) (mean-reversion) |
+| `log_news_count` | −0.378 | More total news that day → lower P(up) next day |
+| `political_instability_lm_neg` | −0.255 | Negative-toned political-instability headlines → lower P(up) |
+| `log_trade_conflict_count` | +0.229 | More trade-conflict headlines → higher P(up) |
+| `log_monetary_geoeconomic_count` | +0.228 | More monetary/geoeconomic headlines → higher P(up) |
+| `ma_distance_20` | −0.175 | Price above its 20-day average → lower P(up) (mean-reversion) |
 
 These are directionally plausible individually, but with MCC ≈ 0 on test, the model is not usefully separating up-days from down-days overall — see the M4 probability plot (`reports/figures/m4_test_predictions.png`): predicted probabilities cluster tightly around 0.5 all period, with no visible separation between actual up/down days.
 
@@ -79,7 +79,7 @@ Full table: `reports/svd_top_terms.json`.
 - **Headlines only, no article body.** 8-15 tokens per headline gives TF-IDF and LM little to work with; LM dictionary coverage is 52.7% (at least one hit), but most headlines have 0-1 hits total.
 - **LM dictionary built for 10-K filings, not news headlines** — tone words like "crisis" or "conflict" are also taxonomy category keywords, so `lm_neg` correlates only weakly (|r| ≤ 0.11) with category membership, not strongly enough to be redundant, but not a clean independent signal either.
 - **US-outlet source.** CNBC's coverage of Indonesia-specific drivers (Bank Indonesia policy, domestic politics) is thin; most candidate headlines are about US/global macro (Fed, tariffs) rather than IDR-specific events.
-- **Small effective sample for the model complexity.** M4 uses ~80 features against 825 training days; some of the apparent M1-M4 underperformance relative to B2 is consistent with overfitting during validation-based hyperparameter selection, not necessarily "news has zero information content" — a larger news corpus or article bodies could plausibly change this.
+- **Small effective sample for the model complexity.** The final M4 uses 56 features (13 price + 7 count + 16 LM + 20 SVD) against 825 training days; some of the apparent M1-M4 underperformance relative to B2 is consistent with overfitting during validation-based hyperparameter selection, not necessarily "news has zero information content" — a larger news corpus or article bodies could plausibly change this.
 - **Categories are retrieval labels, not verified relevance** (Task 1 finding, inherited here).
 
 ## Reproducibility
@@ -104,3 +104,5 @@ Full table: `reports/svd_top_terms.json`.
 | `reports/task2_results.json` | Full machine-readable results (source for this document) |
 | `reports/figures/` | Model comparison bar chart; M4/B2 probability-vs-actual plots |
 | `reports/task2_manifest.json` | Run status per stage |
+| `data/splits/{train,validation,test}.csv` | The exact modeling rows per split (`python -m src.modeling.export_splits`); excludes TF-IDF/SVD, which is refit per training window |
+| `notebook/task2_eda_and_experiments.ipynb` | EDA and the experimental results above, with figures |

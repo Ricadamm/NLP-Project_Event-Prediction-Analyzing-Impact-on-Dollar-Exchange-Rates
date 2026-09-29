@@ -1,0 +1,79 @@
+{
+  "source": "src.modeling.dataset.build_modeling_table",
+  "splits": {
+    "train": {
+      "rows": 825,
+      "start_date": "2021-09-29",
+      "end_date": "2025-02-24",
+      "share_next_day_up": 0.5576
+    },
+    "validation": {
+      "rows": 176,
+      "start_date": "2025-02-26",
+      "end_date": "2025-11-24",
+      "share_next_day_up": 0.517
+    },
+    "test": {
+      "rows": 178,
+      "start_date": "2025-11-26",
+      "end_date": "2026-08-31",
+      "share_next_day_up": 0.5787
+    }
+  },
+  "purged_boundary_dates": [
+    "2025-02-25",
+    "2025-11-25"
+  ],
+  "columns": [
+    "date",
+    "jisdor",
+    "return_pct",
+    "next_return_pct",
+    "y",
+    "ret_lag_0",
+    "ret_lag_1",
+    "ret_lag_2",
+    "ret_lag_3",
+    "ret_lag_4",
+    "momentum_5",
+    "momentum_20",
+    "volatility_20",
+    "ma_distance_20",
+    "dow_1",
+    "dow_2",
+    "dow_3",
+    "dow_4",
+    "news_count",
+    "armed_conflict_count",
+    "sanctions_count",
+    "trade_conflict_count",
+    "energy_geopolitics_count",
+    "political_instability_count",
+    "monetary_geoeconomic_count",
+    "log_news_count",
+    "log_armed_conflict_count",
+    "log_sanctions_count",
+    "log_trade_conflict_count",
+    "log_energy_geopolitics_count",
+    "log_political_instability_count",
+    "log_monetary_geoeconomic_count",
+    "lm_neg",
+    "lm_pos",
+    "lm_unc",
+    "lm_net",
+    "armed_conflict_lm_net",
+    "sanctions_lm_net",
+    "trade_conflict_lm_net",
+    "energy_geopolitics_lm_net",
+    "political_instability_lm_net",
+    "monetary_geoeconomic_lm_net",
+    "armed_conflict_lm_neg",
+    "sanctions_lm_neg",
+    "trade_conflict_lm_neg",
+    "energy_geopolitics_lm_neg",
+    "political_instability_lm_neg",
+    "monetary_geoeconomic_lm_neg"
+  ],
+  "not_included": "TF-IDF/SVD components: refit per training window inside src/modeling/train.py (see docs/task2_plan.md, section 1.3).",
+  "matches_reports_task2_results": true
+}

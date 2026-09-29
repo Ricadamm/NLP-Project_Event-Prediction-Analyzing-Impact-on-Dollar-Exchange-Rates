@@ -57,7 +57,7 @@ A teammate supplied `data/processed/cnbc_headlines_aligned.csv` (10,997 rows: `a
 - `published_at_wib` carries a real time-of-day, and `effective_trade_date` is already computed with the actual 15:00 WIB cutoff — no date-only approximation needed.
 - **Decisive check:** aggregating this file by `effective_trade_date` (news_count + the 6 category counts) and comparing cell-by-cell against the already-committed `data/processed/cnbc_jisdor_daily.csv` gives **zero mismatches across all 1,202 trading days**. This file is the exact source of the committed daily dataset.
 
-(An earlier, incomplete supply attempt — `data/raw/cnbc_article_index.csv`, the pre-enrichment discovery output with day-only dates and no publisher keywords — was superseded by this file and has been deleted from the working tree.)
+(The pre-enrichment discovery output — 120,034 URLs with day-only dates and no publisher keywords — is kept compressed as `data/raw/cnbc_article.gz` for provenance. Task 2 does not read it; this aligned file supersedes it for modeling.)
 
 This is a small file (~4.2MB): commit it to the repo.
 
@@ -65,19 +65,16 @@ Acceptance check (passed): 10,997 rows, `alignment_reason` counts as above, zero
 
 ### 0.2 Restore configs on `main` — done
 
-`config/cnbc.yaml`, `config/geopolitical_topics.yaml` and `config/gdelt.yaml` were recovered from branch `origin/task1-cnbc-pipeline` and copied into this working tree (not yet committed). That branch also had a `tests/` suite, `pytest.ini`, and `docs/cnbc_manual_review_protocol.md`, none of which were on `main`; those were copied in too since they're needed to validate Task 1 before building on top of it.
+`config/cnbc.yaml`, `config/geopolitical_topics.yaml` and `config/gdelt.yaml` were recovered from branch `origin/task1-cnbc-pipeline` and are now tracked. That branch also had a `tests/` suite, `pytest.ini`, and `docs/cnbc_manual_review_protocol.md`; those were brought over too, to validate Task 1 before building on top of it. (`config/gdelt.yaml` belongs to the retired GDELT collector and is unused by the CNBC pipeline.)
 
-Note: neither `origin/task1-cnbc-pipeline` nor `origin/task1-data-pipeline` contains the article-level headline files (`cnbc_jisdor_aligned.csv`, `cnbc_news_candidates.csv`, `cnbc_news_enriched.csv`, `cnbc_article_index.csv`) — only aggregated daily counts and JSON reports were ever committed anywhere. Section 0.1 is still blocking.
+### 0.3 Dependencies — done
 
-### 0.3 Dependencies
+`scikit-learn`, `scipy`, `PyYAML`, `openpyxl`, `statsmodels` (for McNemar), and `matplotlib` (for plots) are in `requirements.txt`.
 
-Add these to `requirements.txt`: `scikit-learn`, `scipy`, `PyYAML`, `openpyxl`, `statsmodels` (for McNemar), and `matplotlib` (for plots). PyYAML and openpyxl are already imported by Task 1 but not listed.
+### 0.4 LM dictionary — done
 
-### 0.4 LM dictionary
-
-- Download the Loughran-McDonald Master Dictionary CSV from the Notre Dame Software Repository for Accounting and Finance (SRAF).
-- Store it under `data/external/`. Record the version/year and the source URL in the feature report.
-- It is free for academic use. Cite Loughran & McDonald (2011).
+- `data/external/Loughran-McDonald_MasterDictionary_1993-2025.csv`, from the Notre Dame Software Repository for Accounting and Finance (SRAF): https://sraf.nd.edu/loughranmcdonald-master-dictionary/
+- Free for academic use. Cite Loughran & McDonald (2011).
 
 ---
 
@@ -304,8 +301,10 @@ src/modeling/
   baselines.py                     # B0, B1
   train.py                         # grid search on validation, refit on train+val
   evaluate.py                      # metrics, McNemar, binomial, bootstrap, walk-forward
+  export_splits.py                 # writes the exact split rows to data/splits/ (no TF-IDF, see 1.5)
 src/pipeline/run_task2.py          # orchestration + manifest
 reports/                           # task2_results.json, tuning log, figures
+notebook/                          # EDA + initial experimental results (reads the outputs above)
 ```
 
 Built-in leakage checks. The run fails if any of these fail, in the same spirit as Task 1's `counts_reconcile`:
@@ -326,9 +325,9 @@ Built-in leakage checks. The run fails if any of these fail, in the same spirit 
 6. Final refit and a single test evaluation, then the statistical checks and walk-forward check.
 7. Write-up: results table (B0, B1, B2, M1–M4 × accuracy, macro-F1, MCC, CI), the McNemar result, interpretation, limitations.
 
-## 6. Decisions to confirm with the team
+## 6. Decisions adopted
 
-1. **Next-day target** instead of same-day `return_pct` (recommended, see 2.1).
-2. **TF-IDF over all news + SVD** instead of per-category TF-IDF (recommended, see 1.3).
-3. **Macro-F1** as the F1 variant (recommended, see 3.4).
-4. Who provides the article-level aligned CSV (section 0.1).
+1. **Next-day target** instead of same-day `return_pct` (see 2.1).
+2. **TF-IDF over all news + SVD** instead of per-category TF-IDF (see 1.3).
+3. **Macro-F1** as the F1 variant (see 3.4).
+4. Article-level input: `data/processed/cnbc_headlines_aligned.csv`, supplied by the team and verified in section 0.1.
