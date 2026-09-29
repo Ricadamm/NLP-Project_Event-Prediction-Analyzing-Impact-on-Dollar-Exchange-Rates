@@ -60,11 +60,7 @@ Task 2 uses the **Loughran-McDonald Master Dictionary (1993–2025)** from the N
 ├── requirements.txt
 ├── pytest.ini
 │
-├── config/
-│   ├── cnbc.yaml                  # Task 1: CNBC acquisition, enrichment, 15:00 WIB alignment cutoff
-│   ├── geopolitical_topics.yaml   # six-category keyword taxonomy
-│   ├── task2.yaml                 # Task 2: text cleaning, LM rules, TF-IDF, split, model grid, evaluation
-│   └── gdelt.yaml                 # legacy GDELT collector (not used, see "Legacy code")
+
 │
 ├── data/
 │   ├── raw/
@@ -108,9 +104,7 @@ Task 2 uses the **Loughran-McDonald Master Dictionary (1993–2025)** from the N
 │   ├── task2_coefficients.json, svd_top_terms.json
 │   └── figures/                                # model comparison and probability plots
 │
-├── docs/
-│   ├── task2_plan.md                           # Task 2 methodology and design decisions
-│   └── cnbc_manual_review_protocol.md          # protocol for labelling the review sample
+
 │
 └── tests/                                      # Task 1 test suite (pytest)
 ```
