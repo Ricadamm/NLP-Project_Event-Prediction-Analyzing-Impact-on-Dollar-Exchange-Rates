@@ -92,10 +92,6 @@ The repository contains JISDOR observations for the study period and retains onl
     │   ├── prefilter_cnbc.py
     │   └── sample_cnbc_review.py
     │
-    ├── data_alignment.py
-    ├── preprocess_USDExchangeRate.py
-    ├── run_task1.py
-    └── scraper_news.py
 
 ```
 
