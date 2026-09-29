@@ -1,0 +1,50 @@
+# Human-designed candidate retrieval taxonomy supplied by the project team.
+# Membership records the query that matched, not validated geopolitical relevance.
+armed_conflict:
+  keywords:
+    - war
+    - invasion
+    - missile
+    - airstrike
+    - ceasefire
+    - military
+    - conflict
+
+sanctions:
+  keywords:
+    - sanction
+    - sanctions
+    - embargo
+    - "asset freeze"
+    - "export restriction"
+
+trade_conflict:
+  keywords:
+    - tariff
+    - tariffs
+    - "trade war"
+    - "export ban"
+    - "trade restriction"
+
+energy_geopolitics:
+  keywords:
+    - OPEC
+    - "oil embargo"
+    - "oil supply"
+    - "energy crisis"
+    - "natural gas"
+
+political_instability:
+  keywords:
+    - coup
+    - unrest
+    - impeachment
+    - "political crisis"
+
+monetary_geoeconomic:
+  keywords:
+    - "Federal Reserve"
+    - "interest rate"
+    - "rate hike"
+    - inflation
+    - CPI

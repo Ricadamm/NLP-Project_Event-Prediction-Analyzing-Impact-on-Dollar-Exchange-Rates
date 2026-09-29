@@ -1,0 +1,37 @@
+{
+  "article_rows": 10997,
+  "category_article_counts": {
+    "armed_conflict": 3361,
+    "energy_geopolitics": 525,
+    "monetary_geoeconomic": 5106,
+    "political_instability": 78,
+    "sanctions": 298,
+    "trade_conflict": 2427
+  },
+  "category_vs_lm_neg_correlation": {
+    "armed_conflict": 0.1000769038037201,
+    "energy_geopolitics": 0.030175487753288238,
+    "monetary_geoeconomic": -0.10745909340728355,
+    "political_instability": 0.08783690782052804,
+    "sanctions": 0.03706113084811894,
+    "trade_conflict": 0.008214405371926348
+  },
+  "count_reconciliation_mismatches_by_column": {
+    "armed_conflict_count": 0,
+    "energy_geopolitics_count": 0,
+    "monetary_geoeconomic_count": 0,
+    "news_count": 0,
+    "political_instability_count": 0,
+    "sanctions_count": 0,
+    "trade_conflict_count": 0
+  },
+  "counts_reconcile": true,
+  "duplicate_titles_found_same_day_kept_for_reconciliation": 3,
+  "input_rows": 10997,
+  "jisdor_trading_days": 1202,
+  "lm_coverage_rate": 0.5274165681549513,
+  "lm_dictionary_path": "data/external/Loughran-McDonald_MasterDictionary_1993-2025.csv",
+  "lm_zero_token_headlines": 0,
+  "trading_days_with_news": 1185,
+  "trading_days_with_zero_news": 17
+}

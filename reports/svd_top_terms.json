@@ -1,0 +1,1086 @@
+{
+  "M3": {
+    "svd_0": {
+      "top_positive_terms": [
+        "inflation",
+        "fed",
+        "says",
+        "trump",
+        "tariffs",
+        "rate",
+        "treasury",
+        "stocks",
+        "year",
+        "war"
+      ],
+      "top_negative_terms": [
+        "political crisis",
+        "satellite images",
+        "images",
+        "rafah",
+        "solve conflict",
+        "couples use",
+        "sudan",
+        "military use",
+        "houthis",
+        "paris"
+      ],
+      "explained_variance_ratio": 0.0024467229681522148
+    },
+    "svd_1": {
+      "top_positive_terms": [
+        "trump",
+        "war",
+        "ukraine",
+        "tariffs",
+        "russia",
+        "says",
+        "trump tariffs",
+        "ukraine war",
+        "china",
+        "trade"
+      ],
+      "top_negative_terms": [
+        "treasury",
+        "inflation",
+        "year",
+        "fed",
+        "yield",
+        "year treasury",
+        "treasury yield",
+        "10 year",
+        "rate",
+        "10"
+      ],
+      "explained_variance_ratio": 0.008940532882524008
+    },
+    "svd_2": {
+      "top_positive_terms": [
+        "tariffs",
+        "trump",
+        "trump tariffs",
+        "tariff",
+        "stocks",
+        "trump tariff",
+        "markets",
+        "trade",
+        "market",
+        "canada"
+      ],
+      "top_negative_terms": [
+        "ukraine",
+        "russia",
+        "war",
+        "ukraine war",
+        "putin",
+        "russia ukraine",
+        "russian",
+        "invasion",
+        "war ukraine",
+        "treasury"
+      ],
+      "explained_variance_ratio": 0.00786794142320569
+    },
+    "svd_3": {
+      "top_positive_terms": [
+        "treasury",
+        "yield",
+        "year treasury",
+        "treasury yield",
+        "10 year",
+        "10",
+        "year",
+        "trump",
+        "tariffs",
+        "trump tariffs"
+      ],
+      "top_negative_terms": [
+        "fed",
+        "rate",
+        "inflation",
+        "federal reserve",
+        "reserve",
+        "federal",
+        "hike",
+        "rates",
+        "rate hike",
+        "hikes"
+      ],
+      "explained_variance_ratio": 0.007054968993753774
+    },
+    "svd_4": {
+      "top_positive_terms": [
+        "fed",
+        "rate",
+        "federal",
+        "federal reserve",
+        "reserve",
+        "says",
+        "year",
+        "hike",
+        "powell",
+        "hikes"
+      ],
+      "top_negative_terms": [
+        "inflation",
+        "close",
+        "european",
+        "data",
+        "inflation data",
+        "stocks",
+        "markets",
+        "stocks close",
+        "lower",
+        "european stocks"
+      ],
+      "explained_variance_ratio": 0.0063984116927159615
+    },
+    "svd_5": {
+      "top_positive_terms": [
+        "inflation",
+        "says",
+        "year",
+        "cramer",
+        "10",
+        "prices",
+        "jim",
+        "jim cramer",
+        "high",
+        "cramer says"
+      ],
+      "top_negative_terms": [
+        "yields",
+        "treasury yields",
+        "federal",
+        "reserve",
+        "federal reserve",
+        "investors",
+        "rate",
+        "markets",
+        "treasury",
+        "hike"
+      ],
+      "explained_variance_ratio": 0.005317885486475239
+    },
+    "svd_6": {
+      "top_positive_terms": [
+        "yields",
+        "treasury yields",
+        "treasury",
+        "investors",
+        "yields rise",
+        "rise",
+        "says",
+        "inflation",
+        "fed",
+        "yields fall"
+      ],
+      "top_negative_terms": [
+        "european",
+        "close",
+        "year",
+        "10",
+        "yield",
+        "federal",
+        "reserve",
+        "federal reserve",
+        "year treasury",
+        "treasury yield"
+      ],
+      "explained_variance_ratio": 0.005173433987667762
+    },
+    "svd_7": {
+      "top_positive_terms": [
+        "federal",
+        "reserve",
+        "federal reserve",
+        "inflation",
+        "week",
+        "means",
+        "report",
+        "rates",
+        "stock",
+        "data"
+      ],
+      "top_negative_terms": [
+        "fed",
+        "rate",
+        "european",
+        "bank",
+        "fed rate",
+        "central",
+        "central bank",
+        "close",
+        "rate cuts",
+        "markets"
+      ],
+      "explained_variance_ratio": 0.004831198881767248
+    },
+    "svd_8": {
+      "top_positive_terms": [
+        "tariff",
+        "trump tariff",
+        "trade",
+        "asia",
+        "trade war",
+        "china",
+        "war",
+        "markets",
+        "cramer",
+        "market"
+      ],
+      "top_negative_terms": [
+        "tariffs",
+        "trump tariffs",
+        "inflation",
+        "prices",
+        "ukraine",
+        "russia",
+        "yields",
+        "treasury yields",
+        "european",
+        "expected"
+      ],
+      "explained_variance_ratio": 0.004413368842666035
+    },
+    "svd_9": {
+      "top_positive_terms": [
+        "oil",
+        "israel",
+        "prices",
+        "crude",
+        "crude oil",
+        "opec",
+        "war",
+        "oil prices",
+        "hamas",
+        "iran"
+      ],
+      "top_negative_terms": [
+        "says",
+        "ukraine",
+        "russia",
+        "cramer",
+        "tariff",
+        "jim cramer",
+        "jim",
+        "stocks",
+        "cramer says",
+        "close"
+      ],
+      "explained_variance_ratio": 0.004258461706149562
+    },
+    "svd_10": {
+      "top_positive_terms": [
+        "says",
+        "tariff",
+        "oil",
+        "bank",
+        "european",
+        "yields",
+        "treasury yields",
+        "central",
+        "central bank",
+        "treasury"
+      ],
+      "top_negative_terms": [
+        "war",
+        "trade",
+        "fed",
+        "inflation",
+        "report",
+        "inflation report",
+        "tariffs",
+        "street",
+        "wall",
+        "wall street"
+      ],
+      "explained_variance_ratio": 0.004117829505379914
+    },
+    "svd_11": {
+      "top_positive_terms": [
+        "bank",
+        "central",
+        "central bank",
+        "inflation",
+        "trade",
+        "tariff",
+        "european central",
+        "china",
+        "asia",
+        "rate"
+      ],
+      "top_negative_terms": [
+        "fed",
+        "oil",
+        "market",
+        "powell",
+        "close",
+        "stocks",
+        "cramer",
+        "israel",
+        "live",
+        "jim"
+      ],
+      "explained_variance_ratio": 0.0039265666062131225
+    },
+    "svd_12": {
+      "top_positive_terms": [
+        "tariff",
+        "report",
+        "rate",
+        "live updates",
+        "updates",
+        "live",
+        "inflation report",
+        "500",
+        "dow",
+        "trump"
+      ],
+      "top_negative_terms": [
+        "says",
+        "markets",
+        "asia",
+        "war",
+        "trade",
+        "pacific",
+        "asia pacific",
+        "cramer",
+        "israel",
+        "pacific markets"
+      ],
+      "explained_variance_ratio": 0.0038560381495518162
+    },
+    "svd_13": {
+      "top_positive_terms": [
+        "war",
+        "trade war",
+        "trade",
+        "israel",
+        "hamas",
+        "stocks",
+        "israel hamas",
+        "hamas war",
+        "yields",
+        "european"
+      ],
+      "top_negative_terms": [
+        "markets",
+        "asia",
+        "russia",
+        "oil",
+        "asia pacific",
+        "pacific",
+        "ukraine",
+        "pacific markets",
+        "prices",
+        "invasion"
+      ],
+      "explained_variance_ratio": 0.00383342717435918
+    },
+    "svd_14": {
+      "top_positive_terms": [
+        "market",
+        "cramer",
+        "rate",
+        "jim",
+        "jim cramer",
+        "cramer says",
+        "stock",
+        "rate hike",
+        "data",
+        "hike"
+      ],
+      "top_negative_terms": [
+        "fed",
+        "rates",
+        "powell",
+        "tariff",
+        "chair",
+        "fed chair",
+        "inflation",
+        "markets",
+        "live",
+        "trump"
+      ],
+      "explained_variance_ratio": 0.0036577451352775877
+    },
+    "svd_15": {
+      "top_positive_terms": [
+        "bank",
+        "central",
+        "israel",
+        "central bank",
+        "says",
+        "live",
+        "updates",
+        "hamas",
+        "live updates",
+        "inflation data"
+      ],
+      "top_negative_terms": [
+        "trade",
+        "prices",
+        "stocks",
+        "trade war",
+        "gas",
+        "war",
+        "natural",
+        "natural gas",
+        "china",
+        "expected"
+      ],
+      "explained_variance_ratio": 0.0035958906862452126
+    },
+    "svd_16": {
+      "top_positive_terms": [
+        "rates",
+        "bank",
+        "central",
+        "central bank",
+        "trade",
+        "fed",
+        "powell",
+        "trade war",
+        "market",
+        "oil"
+      ],
+      "top_negative_terms": [
+        "rate",
+        "says",
+        "israel",
+        "hamas",
+        "israel hamas",
+        "rate hikes",
+        "rate hike",
+        "hikes",
+        "hamas war",
+        "hike"
+      ],
+      "explained_variance_ratio": 0.003381331745418512
+    },
+    "svd_17": {
+      "top_positive_terms": [
+        "live",
+        "gas",
+        "live updates",
+        "updates",
+        "natural",
+        "natural gas",
+        "dow",
+        "points",
+        "prices",
+        "cramer"
+      ],
+      "top_negative_terms": [
+        "street",
+        "wall",
+        "wall street",
+        "israel",
+        "inflation data",
+        "week",
+        "data",
+        "iran",
+        "sanctions",
+        "military"
+      ],
+      "explained_variance_ratio": 0.0032245953945669007
+    },
+    "svd_18": {
+      "top_positive_terms": [
+        "says",
+        "data",
+        "street",
+        "china",
+        "inflation data",
+        "wall",
+        "wall street",
+        "trade",
+        "gas",
+        "ceo"
+      ],
+      "top_negative_terms": [
+        "market",
+        "stock",
+        "stock market",
+        "israel",
+        "markets",
+        "cramer",
+        "jim",
+        "jim cramer",
+        "inflation",
+        "ukraine"
+      ],
+      "explained_variance_ratio": 0.0031687086822641823
+    },
+    "svd_19": {
+      "top_positive_terms": [
+        "gas",
+        "natural",
+        "natural gas",
+        "israel",
+        "hamas",
+        "street",
+        "wall",
+        "wall street",
+        "israel hamas",
+        "europe"
+      ],
+      "top_negative_terms": [
+        "oil",
+        "crude",
+        "crude oil",
+        "china",
+        "opec",
+        "says",
+        "trade",
+        "cramer",
+        "jim cramer",
+        "jim"
+      ],
+      "explained_variance_ratio": 0.0031324493038520436
+    }
+  },
+  "M4": {
+    "svd_0": {
+      "top_positive_terms": [
+        "inflation",
+        "fed",
+        "says",
+        "trump",
+        "tariffs",
+        "rate",
+        "treasury",
+        "stocks",
+        "year",
+        "war"
+      ],
+      "top_negative_terms": [
+        "political crisis",
+        "satellite images",
+        "images",
+        "rafah",
+        "solve conflict",
+        "couples use",
+        "sudan",
+        "military use",
+        "houthis",
+        "paris"
+      ],
+      "explained_variance_ratio": 0.0024467229681522148
+    },
+    "svd_1": {
+      "top_positive_terms": [
+        "trump",
+        "war",
+        "ukraine",
+        "tariffs",
+        "russia",
+        "says",
+        "trump tariffs",
+        "ukraine war",
+        "china",
+        "trade"
+      ],
+      "top_negative_terms": [
+        "treasury",
+        "inflation",
+        "year",
+        "fed",
+        "yield",
+        "year treasury",
+        "treasury yield",
+        "10 year",
+        "rate",
+        "10"
+      ],
+      "explained_variance_ratio": 0.008940532882524008
+    },
+    "svd_2": {
+      "top_positive_terms": [
+        "tariffs",
+        "trump",
+        "trump tariffs",
+        "tariff",
+        "stocks",
+        "trump tariff",
+        "markets",
+        "trade",
+        "market",
+        "canada"
+      ],
+      "top_negative_terms": [
+        "ukraine",
+        "russia",
+        "war",
+        "ukraine war",
+        "putin",
+        "russia ukraine",
+        "russian",
+        "invasion",
+        "war ukraine",
+        "treasury"
+      ],
+      "explained_variance_ratio": 0.00786794142320569
+    },
+    "svd_3": {
+      "top_positive_terms": [
+        "treasury",
+        "yield",
+        "year treasury",
+        "treasury yield",
+        "10 year",
+        "10",
+        "year",
+        "trump",
+        "tariffs",
+        "trump tariffs"
+      ],
+      "top_negative_terms": [
+        "fed",
+        "rate",
+        "inflation",
+        "federal reserve",
+        "reserve",
+        "federal",
+        "hike",
+        "rates",
+        "rate hike",
+        "hikes"
+      ],
+      "explained_variance_ratio": 0.007054968993753774
+    },
+    "svd_4": {
+      "top_positive_terms": [
+        "fed",
+        "rate",
+        "federal",
+        "federal reserve",
+        "reserve",
+        "says",
+        "year",
+        "hike",
+        "powell",
+        "hikes"
+      ],
+      "top_negative_terms": [
+        "inflation",
+        "close",
+        "european",
+        "data",
+        "inflation data",
+        "stocks",
+        "markets",
+        "stocks close",
+        "lower",
+        "european stocks"
+      ],
+      "explained_variance_ratio": 0.0063984116927159615
+    },
+    "svd_5": {
+      "top_positive_terms": [
+        "inflation",
+        "says",
+        "year",
+        "cramer",
+        "10",
+        "prices",
+        "jim",
+        "jim cramer",
+        "high",
+        "cramer says"
+      ],
+      "top_negative_terms": [
+        "yields",
+        "treasury yields",
+        "federal",
+        "reserve",
+        "federal reserve",
+        "investors",
+        "rate",
+        "markets",
+        "treasury",
+        "hike"
+      ],
+      "explained_variance_ratio": 0.005317885486475239
+    },
+    "svd_6": {
+      "top_positive_terms": [
+        "yields",
+        "treasury yields",
+        "treasury",
+        "investors",
+        "yields rise",
+        "rise",
+        "says",
+        "inflation",
+        "fed",
+        "yields fall"
+      ],
+      "top_negative_terms": [
+        "european",
+        "close",
+        "year",
+        "10",
+        "yield",
+        "federal",
+        "reserve",
+        "federal reserve",
+        "year treasury",
+        "treasury yield"
+      ],
+      "explained_variance_ratio": 0.005173433987667762
+    },
+    "svd_7": {
+      "top_positive_terms": [
+        "federal",
+        "reserve",
+        "federal reserve",
+        "inflation",
+        "week",
+        "means",
+        "report",
+        "rates",
+        "stock",
+        "data"
+      ],
+      "top_negative_terms": [
+        "fed",
+        "rate",
+        "european",
+        "bank",
+        "fed rate",
+        "central",
+        "central bank",
+        "close",
+        "rate cuts",
+        "markets"
+      ],
+      "explained_variance_ratio": 0.004831198881767248
+    },
+    "svd_8": {
+      "top_positive_terms": [
+        "tariff",
+        "trump tariff",
+        "trade",
+        "asia",
+        "trade war",
+        "china",
+        "war",
+        "markets",
+        "cramer",
+        "market"
+      ],
+      "top_negative_terms": [
+        "tariffs",
+        "trump tariffs",
+        "inflation",
+        "prices",
+        "ukraine",
+        "russia",
+        "yields",
+        "treasury yields",
+        "european",
+        "expected"
+      ],
+      "explained_variance_ratio": 0.004413368842666035
+    },
+    "svd_9": {
+      "top_positive_terms": [
+        "oil",
+        "israel",
+        "prices",
+        "crude",
+        "crude oil",
+        "opec",
+        "war",
+        "oil prices",
+        "hamas",
+        "iran"
+      ],
+      "top_negative_terms": [
+        "says",
+        "ukraine",
+        "russia",
+        "cramer",
+        "tariff",
+        "jim cramer",
+        "jim",
+        "stocks",
+        "cramer says",
+        "close"
+      ],
+      "explained_variance_ratio": 0.004258461706149562
+    },
+    "svd_10": {
+      "top_positive_terms": [
+        "says",
+        "tariff",
+        "oil",
+        "bank",
+        "european",
+        "yields",
+        "treasury yields",
+        "central",
+        "central bank",
+        "treasury"
+      ],
+      "top_negative_terms": [
+        "war",
+        "trade",
+        "fed",
+        "inflation",
+        "report",
+        "inflation report",
+        "tariffs",
+        "street",
+        "wall",
+        "wall street"
+      ],
+      "explained_variance_ratio": 0.004117829505379914
+    },
+    "svd_11": {
+      "top_positive_terms": [
+        "bank",
+        "central",
+        "central bank",
+        "inflation",
+        "trade",
+        "tariff",
+        "european central",
+        "china",
+        "asia",
+        "rate"
+      ],
+      "top_negative_terms": [
+        "fed",
+        "oil",
+        "market",
+        "powell",
+        "close",
+        "stocks",
+        "cramer",
+        "israel",
+        "live",
+        "jim"
+      ],
+      "explained_variance_ratio": 0.0039265666062131225
+    },
+    "svd_12": {
+      "top_positive_terms": [
+        "tariff",
+        "report",
+        "rate",
+        "live updates",
+        "updates",
+        "live",
+        "inflation report",
+        "500",
+        "dow",
+        "trump"
+      ],
+      "top_negative_terms": [
+        "says",
+        "markets",
+        "asia",
+        "war",
+        "trade",
+        "pacific",
+        "asia pacific",
+        "cramer",
+        "israel",
+        "pacific markets"
+      ],
+      "explained_variance_ratio": 0.0038560381495518162
+    },
+    "svd_13": {
+      "top_positive_terms": [
+        "war",
+        "trade war",
+        "trade",
+        "israel",
+        "hamas",
+        "stocks",
+        "israel hamas",
+        "hamas war",
+        "yields",
+        "european"
+      ],
+      "top_negative_terms": [
+        "markets",
+        "asia",
+        "russia",
+        "oil",
+        "asia pacific",
+        "pacific",
+        "ukraine",
+        "pacific markets",
+        "prices",
+        "invasion"
+      ],
+      "explained_variance_ratio": 0.00383342717435918
+    },
+    "svd_14": {
+      "top_positive_terms": [
+        "market",
+        "cramer",
+        "rate",
+        "jim",
+        "jim cramer",
+        "cramer says",
+        "stock",
+        "rate hike",
+        "data",
+        "hike"
+      ],
+      "top_negative_terms": [
+        "fed",
+        "rates",
+        "powell",
+        "tariff",
+        "chair",
+        "fed chair",
+        "inflation",
+        "markets",
+        "live",
+        "trump"
+      ],
+      "explained_variance_ratio": 0.0036577451352775877
+    },
+    "svd_15": {
+      "top_positive_terms": [
+        "bank",
+        "central",
+        "israel",
+        "central bank",
+        "says",
+        "live",
+        "updates",
+        "hamas",
+        "live updates",
+        "inflation data"
+      ],
+      "top_negative_terms": [
+        "trade",
+        "prices",
+        "stocks",
+        "trade war",
+        "gas",
+        "war",
+        "natural",
+        "natural gas",
+        "china",
+        "expected"
+      ],
+      "explained_variance_ratio": 0.0035958906862452126
+    },
+    "svd_16": {
+      "top_positive_terms": [
+        "rates",
+        "bank",
+        "central",
+        "central bank",
+        "trade",
+        "fed",
+        "powell",
+        "trade war",
+        "market",
+        "oil"
+      ],
+      "top_negative_terms": [
+        "rate",
+        "says",
+        "israel",
+        "hamas",
+        "israel hamas",
+        "rate hikes",
+        "rate hike",
+        "hikes",
+        "hamas war",
+        "hike"
+      ],
+      "explained_variance_ratio": 0.003381331745418512
+    },
+    "svd_17": {
+      "top_positive_terms": [
+        "live",
+        "gas",
+        "live updates",
+        "updates",
+        "natural",
+        "natural gas",
+        "dow",
+        "points",
+        "prices",
+        "cramer"
+      ],
+      "top_negative_terms": [
+        "street",
+        "wall",
+        "wall street",
+        "israel",
+        "inflation data",
+        "week",
+        "data",
+        "iran",
+        "sanctions",
+        "military"
+      ],
+      "explained_variance_ratio": 0.0032245953945669007
+    },
+    "svd_18": {
+      "top_positive_terms": [
+        "says",
+        "data",
+        "street",
+        "china",
+        "inflation data",
+        "wall",
+        "wall street",
+        "trade",
+        "gas",
+        "ceo"
+      ],
+      "top_negative_terms": [
+        "market",
+        "stock",
+        "stock market",
+        "israel",
+        "markets",
+        "cramer",
+        "jim",
+        "jim cramer",
+        "inflation",
+        "ukraine"
+      ],
+      "explained_variance_ratio": 0.0031687086822641823
+    },
+    "svd_19": {
+      "top_positive_terms": [
+        "gas",
+        "natural",
+        "natural gas",
+        "israel",
+        "hamas",
+        "street",
+        "wall",
+        "wall street",
+        "israel hamas",
+        "europe"
+      ],
+      "top_negative_terms": [
+        "oil",
+        "crude",
+        "crude oil",
+        "china",
+        "opec",
+        "says",
+        "trade",
+        "cramer",
+        "jim cramer",
+        "jim"
+      ],
+      "explained_variance_ratio": 0.0031324493038520436
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "pipeline": "task2_nlp_features_and_modeling",
+  "status": "passed",
+  "stages": {
+    "daily_features": {
+      "status": "passed",
+      "article_rows": 10997
+    },
+    "leakage_checks": {
+      "target_matches_next_day_sign": true,
+      "no_duplicate_rows_across_splits": true,
+      "train_before_val": true,
+      "val_before_test": true,
+      "purge_gap_train_val": 2,
+      "purge_gap_val_test": 2,
+      "purge_gaps_at_least_one_day": true
+    },
+    "tuning": {
+      "status": "passed",
+      "configs_tried": 144
+    },
+    "final_test_evaluation": {
+      "status": "passed",
+      "decision": "No evidence of added value at this sample size (see docs/task2_plan.md section 3.5)."
+    }
+  }
+}

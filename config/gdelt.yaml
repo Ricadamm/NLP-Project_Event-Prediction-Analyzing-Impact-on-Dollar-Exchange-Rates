@@ -1,0 +1,33 @@
+api:
+  base_url: "https://api.gdeltproject.org/api/v2/doc/doc"
+  mode: "artlist"
+  format: "json"
+  max_records: 250
+  sort: "dateasc"
+  timeout_seconds: 60
+  max_retries: 5
+  initial_retry_delay_seconds: 5
+  max_retry_delay_seconds: 300
+  request_delay_seconds: 1
+  # The live 2026-09-09 pilot returned HTTP 429 requesting five seconds between
+  # calls. Enforce five idle seconds after EVERY response/transport failure;
+  # a slow response must not consume this gap before the next attempt starts.
+  minimum_request_interval_seconds: 5
+  minimum_window_minutes: 15
+  # Raw provenance records padded API bounds and logical half-open UTC bounds.
+  boundary_padding_seconds: 1
+
+study:
+  start_date: "2021-09-01"
+  end_date: "2026-09-01"
+
+sources:
+  domains:
+    - "reuters.com"
+
+language:
+  source_language: "english"
+
+collection:
+  # Stop a bounded run after repeated job failures; failed jobs remain resumable.
+  max_consecutive_failed_jobs: 3
