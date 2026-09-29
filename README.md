@@ -350,7 +350,6 @@ The already-generated Task 1 processed outputs are available under `data/process
 - No weekend/holiday JISDOR values are interpolated.
 - The **15:00 WIB cutoff** is a configured research assumption.
 - Deterministic geopolitical categories are retrieval/filtering labels rather than manual relevance labels.
-- GDELT remains in the repository as an earlier/alternative acquisition approach; the final historical pipeline uses CNBC.
 
 ---
 
