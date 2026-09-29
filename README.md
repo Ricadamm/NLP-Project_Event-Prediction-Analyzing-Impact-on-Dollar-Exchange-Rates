@@ -304,19 +304,6 @@ This runs the Task 1 test suite. 8 tests in `tests/test_news_cleaning.py` curren
 - The 15:00 WIB cutoff is a research assumption, and the categories are retrieval labels, not ground truth.
 - A recurring newsletter prefix, "CNBC Daily Open:" (396 headlines), is stripped before text features are computed, so it doesn't dominate the TF-IDF topics.
 
-### Legacy code
-
-An earlier version of the project collected news from **GDELT**. The final pipeline uses **CNBC only**, but the GDELT code is still in the repository and is not called by either pipeline:
-- `src/acquisition/collect_gdelt.py`, `src/acquisition/gdelt_client.py`
-- `src/preprocessing/clean_news.py`
-- `src/scraper_news.py` (a wrapper for the GDELT collector)
-- `config/gdelt.yaml` and the related tests
-
-Other compatibility files:
-- `src/run_task1.py` is a thin wrapper around `src.pipeline.run_task1`.
-- `src/preprocess_USDExchangeRate.py` is the original JISDOR cleaning script. It produced `data/processed/usd_idr_jisdor_cleaned.csv` and has been superseded by `src/preprocessing/clean_jisdor.py`.
-
----
 
 ## Team Members
 
